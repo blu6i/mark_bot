@@ -86,3 +86,7 @@ class RedisDatabase:
         with self.connection() as r:
             return r.exists(self._full_key(key)) > 0
 
+
+redis_instance = RedisDatabase(use_pool=True, prefix="lesson_instance")
+redis_auth_user = RedisDatabase(use_pool=False, prefix="auth_user")
+redis_attendance = RedisDatabase(use_pool=False, prefix="rd_attendance")

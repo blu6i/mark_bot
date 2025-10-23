@@ -1,5 +1,5 @@
 from core.database_config import db_async
-from core.enums import AttendanceStudent
+from core.enums import StatusAttendanceMark
 
 
 async def is_auth_student(user_tg_id: int) -> bool:
@@ -96,9 +96,9 @@ async def get_count_students_instance(lesson_instance_id: int, group_id: int) ->
     return result[0] if result else None
 
 
-async def get_student_id_instance(lesson_instance_id: int, group_id: int) -> list[int]:
+async def get_students_id_instance(lesson_instance_id: int, group_id: int) -> list[int]:
     """
-    Получает ид студента и ид отметки
+    Получает ид студентов и ид отметки
     :param lesson_instance_id: id занятия
     :param group_id: id группы
     :return: количество студентов
@@ -213,7 +213,7 @@ async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, 
     return results if results else []
 
 
-async def insert_student_attendance(student_id: int, lesson_instance_id: int) -> AttendanceStudent:
+async def insert_student_attendance(student_id: int, lesson_instance_id: int) -> StatusAttendanceMark:
     """
     Добавляет отметку студента
     :param lesson_instance_id: id занятия
@@ -232,7 +232,7 @@ async def insert_student_attendance(student_id: int, lesson_instance_id: int) ->
         fetchone=True
     )
     if result:
-        return AttendanceStudent.OK
+        return StatusAttendanceMark.OK
     sql = """
         SELECT id FROM mark_bot.attendance
         WHERE student_id = $1 AND lesson_instance_id = $2
@@ -243,8 +243,8 @@ async def insert_student_attendance(student_id: int, lesson_instance_id: int) ->
         fetchone=True
     )
     if result:
-        return AttendanceStudent.ALREADY
-    return AttendanceStudent.ERROR
+        return StatusAttendanceMark.ALREADY
+    return StatusAttendanceMark.ERROR
 
 
 

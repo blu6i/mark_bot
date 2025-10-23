@@ -1,11 +1,10 @@
 import asyncio
 import json
 
-from core.enums import RunMarkStatus
+from core.enums import StatusRunMark
 from core.requests import lessons, teachers, group, students
-from core.redis_config import RedisDatabase
-
-redis_instance = RedisDatabase(use_pool=False, prefix="lesson_instance")
+from core.redis_config import redis_instance
+from core.logic.students.mark import add_attendance_redis
 
 def _construct_info_msg(lesson_data: list[dict]) -> str:
     """
@@ -32,23 +31,23 @@ def _construct_info_msg(lesson_data: list[dict]) -> str:
     return info_msg
 
 
-async def prestart_mark(user_tg_id: int) -> tuple[RunMarkStatus, str | None]:
+async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None]:
     # TODO: добавить словарь с данными для кнопок
     teacher_id = await teachers.get_teacher_id_by_tg_id(user_tg_id)
     if not teacher_id:
         text = """
         Вы не преподаватель.
         """
-        return RunMarkStatus.IS_NO_TEACHER, text
+        return StatusRunMark.IS_NO_TEACHER, text
     status, mark_data = await lessons.get_actual_lesson_teacher(teacher_id)
-    if status == RunMarkStatus.NO_PAIR_TEACHER:
+    if status == StatusRunMark.NO_PAIR_TEACHER:
         text = """
         Не удалось найти ваши текущие пары.\n
         Хотите создать отметку самостоятельно?
         """
-        return RunMarkStatus.NO_PAIR_TEACHER, text
+        return StatusRunMark.NO_PAIR_TEACHER, text
     text = _construct_info_msg(mark_data)
-    return RunMarkStatus.OK, text
+    return StatusRunMark.OK, text
 
 
 async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id, ttl: int = 180):
@@ -83,11 +82,13 @@ async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id,
                f"\n"
                f"Всего: {sum_count_student}\n")
     await func_send_msg(chat_id=chat_id, text=result)
+    add_attendance_redis(chat_id, lesson_instances_ids)
 
 
 async def started_mark(mark_data: list[dict], user_tg_id: int, func_answer):
     """
     Создание отметок для групп + запись в redis
+    :param func_answer: функция для отправки сообщения преподавателю
     :param mark_data: данные для отметок
     :param user_tg_id: телеграм ид преподавателя
     """

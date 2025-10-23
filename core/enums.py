@@ -17,20 +17,36 @@ class StatusNewUser(Enum):
     OLD_USER_STUDENT = 2
     OLD_USER_TEACHER = 3
 
-class RunMarkStatus(Enum):
+class StatusRunMark(Enum):
     OK = 1
     HAS_STARTED_MARK = 2
     NO_PAIR_TEACHER = 3
     IS_NO_TEACHER = 4
 
 
-class AttendanceStudent(Enum):
+class StatusMarkStudent(Enum):
     OK = 1
     ALREADY = 2
-    ERROR=3
+    ERROR = 3
+    NO_STUDENT = 4
+    NO_MARK = 5
+    MORE_MARK  = 6
+
+
+class StatusAttendanceMark(Enum):
+    OK = 1
+    ALREADY = 2
+    ERROR = 3
 
 
 class StatusLoadExcel(Enum):
     OK = 1
     NO_DATA = 2
     ERROR = 3
+
+
+class StatusValidCountStudent(Enum):
+    OK = 1
+    OVER = 2
+    EQUALLY = 3
+    NO_DATA = 4

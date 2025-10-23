@@ -47,7 +47,7 @@ async def get_groups_id_by_instance_id(lesson_instance_id: int) -> list[tuple[in
     """
     Получает id групп по id занятия
     :param lesson_instance_id: id занятия
-    :return: id групп
+    :return: id группы + название
     """
     sql = """
         SELECT g.id, g.name

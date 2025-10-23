@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from core.database_config import db_async
-from core.enums import StatusLoadExcel, RunMarkStatus
+from core.enums import StatusLoadExcel, StatusRunMark
 from core.requests.teachers import get_teacher_id_by_tg_id
 
 async def get_date_instances(user_tg_id: int) -> tuple[StatusLoadExcel, tuple[str] | None]:
@@ -59,7 +59,7 @@ async def get_subject_schedule_for_teacher(user_tg_id: int, date: str) -> tuple[
     return StatusLoadExcel.NO_DATA, None
 
 
-async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[RunMarkStatus, list[dict] | None]:
+async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, list[dict] | None]:
     """
     Получает актуальную пару для преподавателя
     :param user_tg_id: id телеграм преподавателя
@@ -92,7 +92,7 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[RunMarkStatus, lis
         fetchone=False
     )
     if not results:
-        return RunMarkStatus.NO_PAIR_TEACHER, None
+        return StatusRunMark.NO_PAIR_TEACHER, None
 
     for lesson_id, subject_id, lesson_type, _ in results:
         sql = """
@@ -125,7 +125,7 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[RunMarkStatus, lis
                 "date": now_date,
                 "time": now_time
             })
-    return RunMarkStatus.OK, lesson_data_list
+    return StatusRunMark.OK, lesson_data_list
 
 
 async def increment_stay_count_subject(teacher_subject_ids: list[int]):

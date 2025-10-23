@@ -1,9 +1,7 @@
 from core.enums import StatusAuthUser, StatusNewUser
-from core.redis_config import RedisDatabase
+from core.redis_config import redis_auth_user
 from core.requests import teachers
 from core.requests.students import is_auth_student
-
-redis_auth_user = RedisDatabase(use_pool=False, prefix="auth_user")
 
 async def check_auth_user(user_tg_id: int):
     text = "Добро пожаловать обратно."
