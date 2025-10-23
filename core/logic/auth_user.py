@@ -37,7 +37,7 @@ async def auth_teacher(key: str, user_tg_id: int) -> tuple[StatusAuthUser, str]:
     redis_auth_user.delete(key)
     teacher_data = await teachers.get_teacher_fullname(teacher_id)
     text = f"""
-    Вы успешно авторизовали как преподаватель.\n
+    Вы успешно авторизовались как преподаватель.\n
     ФИО: {teacher_data["last_name"]} {teacher_data["first_name"]} {teacher_data["middle_name"]}
     """
     return StatusAuthUser.OK, text

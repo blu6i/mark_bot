@@ -31,30 +31,55 @@ def _construct_info_msg(lesson_data: list[dict]) -> str:
     return info_msg
 
 
-async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None]:
-    # TODO: добавить словарь с данными для кнопок
+async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dict | None]:
+    """
+    Автоматическое создание отметки
+    :param user_tg_id: id телеграм преподавателя
+    :return: Статус ответ, текст (Опционально) и данные для кнопки (Опционально)
+    """
     teacher_id = await teachers.get_teacher_id_by_tg_id(user_tg_id)
     if not teacher_id:
         text = """
         Вы не преподаватель.
         """
-        return StatusRunMark.IS_NO_TEACHER, text
+        return StatusRunMark.IS_NO_TEACHER, text, None
     status, mark_data = await lessons.get_actual_lesson_teacher(teacher_id)
     if status == StatusRunMark.NO_PAIR_TEACHER:
         text = """
         Не удалось найти ваши текущие пары.\n
         Хотите создать отметку самостоятельно?
         """
-        return StatusRunMark.NO_PAIR_TEACHER, text
+        keyboards_data = {
+            "type": "inline",
+            "buttons": [
+                {
+                    "text": "Создать",
+                    "callback_data": "start_mark"
+                }
+            ]
+        }
+        return StatusRunMark.NO_PAIR_TEACHER, text, keyboards_data
     text = _construct_info_msg(mark_data)
-    return StatusRunMark.OK, text
+    keyboards_data = {
+        "type": "inline",
+        "buttons": [
+            {
+                "text": "Да",
+                "callback_data": "start_mark"
+            },
+            {
+                "text": "Нет",
+                "callback_data": "create_custom_mark"
+            }
+        ]
+    }
+    return StatusRunMark.OK, text, keyboards_data
 
 
 async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id, ttl: int = 180):
-    # TODO: добавить рандомное удаление
     """
     Удаляет временные отметки у групп:
-    1) Если у группы есть еще какие-то отметки, то удаляет только нужно (Переданную)
+    1) Если у группы есть еще какие-то отметки, то удаляет только нужную (Переданную)
     2) Если у группы больше нет отметок, то удаляет ключ
     :param lesson_instances_ids: Список отметок
     :param chat_id: ИД чата, куда высылать информацию об отметке
