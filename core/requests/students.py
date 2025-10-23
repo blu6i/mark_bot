@@ -21,10 +21,10 @@ async def is_auth_student(user_tg_id: int) -> bool:
     return result is not None
 
 
-async def set_student_tg_id(user_id: int, user_tg_id: int | None):
+async def set_student_tg_id(student_id: int, user_tg_id: int | None):
     """
     Устанавливает id телеграма для студента
-    :param user_id: id студента в базе данных
+    :param student_id: id студента в базе данных
     :param user_tg_id: id студента в телеграме
     """
     sql = """
@@ -34,7 +34,7 @@ async def set_student_tg_id(user_id: int, user_tg_id: int | None):
     """
     await db_async.update(
         sql=sql,
-        params=[user_tg_id, user_id]
+        params=[user_tg_id, student_id]
     )
 
 
@@ -170,7 +170,7 @@ async def get_student_last_name(student_id: int) -> str | None:
     return result[0] if result else None
 
 
-async def is_fullname_student_auth(student_id: int) -> bool:
+async def is_registered_student(student_id: int) -> bool:
     """
     Проверяет, зарегистрирован ли студент с ФИО в базе данных
     :param student_id: id студента в базе данных

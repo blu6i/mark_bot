@@ -4,10 +4,11 @@ class TeacherAuthStatus(Enum):
     OK = 1
     TIMEOUT = 2
 
-class StudentAuthStatus(Enum):
+class StatusRegisterStudent(Enum):
     OK = 1
-    BUSY_USER = 2
-    INVALID_USER = 3
+    NOT_FOUND = 2
+    INVALID_FULLNAME = 3
+    BUSY_REGISTER = 4
 
 class TeacherRegistrationStatus(Enum):
     OK = 1
