@@ -79,7 +79,7 @@ async def get_teacher_id_by_fullname(fullname: dict) -> int | None:
 
 async def get_teacher_fullname(teacher_id: int) -> dict | None:
     """
-    Полуает ФИО преподавателя по его id
+    Получает ФИО преподавателя по его id
     :param teacher_id: id преподавателя в базе данных
     :return: ФИО преподавателя
     """

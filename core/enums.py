@@ -1,25 +1,15 @@
 from enum import Enum
 
-class TeacherAuthStatus(Enum):
-    OK = 1
-    TIMEOUT = 2
-
 class StatusRegisterStudent(Enum):
     OK = 1
     NOT_FOUND = 2
     INVALID_FULLNAME = 3
     BUSY_REGISTER = 4
 
-class TeacherRegistrationStatus(Enum):
-    OK = 1
-    NOT_FOUND = 2
-    ALREADY_TG = 3
 
-class MarkStudentStatus(Enum):
+class StatusAuthUser(Enum):
     OK = 1
-    MORE_MARK = 2
-    NO_STUDENT = 3
-    NO_MARK = 4
+    TIMEOUT_LINK = 2
 
 
 class RunMarkStatus(Enum):
@@ -27,11 +17,6 @@ class RunMarkStatus(Enum):
     HAS_STARTED_MARK = 2
     NO_PAIR_TEACHER = 3
     IS_NO_TEACHER = 4
-
-class AccessRights(Enum):
-    ADMINS = 1
-    TEACHER = 2
-    STUDENT = 3
 
 
 class AttendanceStudent(Enum):
@@ -43,11 +28,3 @@ class StatusLoadExcel(Enum):
     OK = 1
     NO_DATA = 2
     ERROR = 3
-
-class StatusValidCountStudent(Enum):
-    OK = 1
-    OVER = 2
-    NO_OVER = 3
-    ERROR = 4
-    EQUALLY = 5
-    NO_DATA = 6
