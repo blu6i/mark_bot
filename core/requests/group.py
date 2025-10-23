@@ -1,3 +1,5 @@
+import asyncio
+
 from core.database_config import db_async
 
 
@@ -41,15 +43,16 @@ async def get_group_id_by_instance_id(lesson_instance_id: int) -> str | None:
     return group_name
 
 
-async def get_groups_id_by_instance_id(lesson_instance_id: int) -> list[int]:
+async def get_groups_id_by_instance_id(lesson_instance_id: int) -> list[tuple[int, str]]:
     """
     Получает id групп по id занятия
     :param lesson_instance_id: id занятия
     :return: id групп
     """
     sql = """
-        SELECT group_id 
-        FROM mark_bot.lesson_instance_groups
+        SELECT g.id, g.name
+        FROM mark_bot.lesson_instance_groups lig
+        JOIN mark_bot.groups g ON g.id = lig.group_id
         WHERE lesson_instance_id = $1
     """
     result = await db_async.select(
@@ -57,7 +60,7 @@ async def get_groups_id_by_instance_id(lesson_instance_id: int) -> list[int]:
         params=[lesson_instance_id],
         fetchone=False
     )
-    return [int(group_id) for group_id in result]
+    return result
 
 
 async def get_group_course(course: int) -> tuple[int]:
@@ -77,3 +80,13 @@ async def get_group_course(course: int) -> tuple[int]:
         fetchone=False
     )
     return result
+
+async def main():
+    r = await get_groups_id_by_instance_id(1)
+    for i in r:
+        id_, name =  i
+        print(f'{id_} {name}')
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
