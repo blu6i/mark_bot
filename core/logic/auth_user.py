@@ -1,8 +1,24 @@
-from core.enums import StatusAuthUser
+from core.enums import StatusAuthUser, StatusNewUser
 from core.redis_config import RedisDatabase
 from core.requests import teachers
+from core.requests.students import is_auth_student
 
 redis_auth_user = RedisDatabase(use_pool=False, prefix="auth_user")
+
+async def check_auth_user(user_tg_id: int):
+    text = "Добро пожаловать обратно."
+    if await teachers.is_auth_teacher(user_tg_id):
+        return StatusNewUser.OLD_USER_TEACHER, text
+    elif await is_auth_student(user_tg_id):
+        return StatusNewUser.OLD_USER_STUDENT, text
+    else:
+        text = """
+        Вы не авторизованы в системе.\n
+        Пожалуйста, введите ваше полное имя (Фамилия Имя Отчество).\n
+        Например: Иванов Иван Иванович:
+        """
+        return StatusNewUser.NEW_USER, text
+
 
 async def auth_teacher(key: str, user_tg_id: int) -> tuple[StatusAuthUser, str]:
     # TODO: адоптировать функцию для авторизации студента

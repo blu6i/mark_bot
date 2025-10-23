@@ -12,6 +12,11 @@ class StatusAuthUser(Enum):
     TIMEOUT_LINK = 2
 
 
+class StatusNewUser(Enum):
+    NEW_USER = 1
+    OLD_USER_STUDENT = 2
+    OLD_USER_TEACHER = 3
+
 class RunMarkStatus(Enum):
     OK = 1
     HAS_STARTED_MARK = 2
@@ -23,6 +28,7 @@ class AttendanceStudent(Enum):
     OK = 1
     ALREADY = 2
     ERROR=3
+
 
 class StatusLoadExcel(Enum):
     OK = 1
