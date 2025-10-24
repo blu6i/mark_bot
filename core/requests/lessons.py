@@ -175,7 +175,7 @@ async def insert_lesson_instance(mark_data: list[dict]) -> list[int]:
             SELECT id FROM mark_bot.lesson_instances
             WHERE lesson_id = $1
         """
-        result = db_async.select(
+        result = await db_async.select(
             sql=sql,
             params=[lesson_id],
             fetchone=True
@@ -189,7 +189,7 @@ async def insert_lesson_instance(mark_data: list[dict]) -> list[int]:
                 VALUES ($1, $2)
                 RETURNING id
             """
-            result = db_async.insert(
+            result = await db_async.insert(
                 sql=sql,
                 params=[lesson_id, pair_number]
             )
@@ -281,7 +281,7 @@ async def insert_custom_lesson(type_: str, subject_id: int, groups: list[int], u
     return data
 
 
-def get_subject_name(subject_id: int) -> str | None:
+async def get_subject_name(subject_id: int) -> str | None:
     """
     Получает название предмета по его id
     :param subject_id: id предмета
@@ -292,7 +292,7 @@ def get_subject_name(subject_id: int) -> str | None:
         FROM mark_bot.subjects
         WHERE id = %1
     """
-    result = db_async.select(
+    result = await db_async.select(
         sql=sql,
         params=[subject_id],
         fetchone=True
@@ -300,7 +300,7 @@ def get_subject_name(subject_id: int) -> str | None:
     return result[0] if result else None
 
 
-def get_subject_name_lesson(lesson_instance_id: int) -> str:
+async def get_subject_name_lesson(lesson_instance_id: int) -> str:
     """
     Получает название предмета по id отметки
     :param lesson_instance_id: id пары
@@ -312,7 +312,7 @@ def get_subject_name_lesson(lesson_instance_id: int) -> str:
         JOIN mark_bot.lesson_instances li ON l.id = li.lesson_id
         WHERE li.id = $1
     """
-    result = db_async.select(
+    result = await db_async.select(
         sql=sql,
         params=[lesson_instance_id],
         fetchone=True

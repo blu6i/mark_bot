@@ -13,7 +13,7 @@ async def is_auth_student(user_tg_id: int) -> bool:
         FROM mark_bot.students 
         WHERE tg_id = $1
     """
-    result = db_async.select(
+    result = await db_async.select(
         sql=sql,
         params=[user_tg_id],
         fetchone=True
@@ -189,7 +189,7 @@ async def is_registered_student(student_id: int) -> bool:
     return result is not None
 
 
-async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, str]] | []:
+async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, str]] | list:
     """
     Получает отметки студента по id занятия
     :param instance_id: id занятия
