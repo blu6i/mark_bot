@@ -40,8 +40,8 @@ async def prestart_mark(message: Message, state: FSMContext):
         await message.answer(text="Неизвестная ошибка")
 
 
-async def message_mark_info(chat_id: int, text: str, button_data: dict):
-    await bot.send_message(chat_id=chat_id, text=text, reply_markup=construct_keyboards(button_data))
+async def message_mark_info(chat_id: int, text: str, keyboards_data: dict):
+    await bot.send_message(chat_id=chat_id, text=text, reply_markup=construct_keyboards(keyboards_data))
 
 
 @start_mark_router.callback_query(F.data == "start_mark",

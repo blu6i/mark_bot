@@ -42,13 +42,12 @@ async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dic
     :param user_tg_id: id телеграм преподавателя
     :return: Статус ответ, текст (Опционально) и данные для кнопки (Опционально)
     """
-    teacher_id = await teachers.get_teacher_id_by_tg_id(user_tg_id)
-    if not teacher_id:
+    status, mark_data = await lessons.get_actual_lesson_teacher(user_tg_id)
+    if status == StatusRunMark.IS_NO_TEACHER:
         text = """
         Вы не преподаватель.
         """
         return StatusRunMark.IS_NO_TEACHER, text, None, None
-    status, mark_data = await lessons.get_actual_lesson_teacher(teacher_id)
     if status == StatusRunMark.NO_PAIR_TEACHER:
         text = """
         Не удалось найти ваши текущие пары.\n
@@ -111,7 +110,16 @@ async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id,
     result += (f"\n"
                f"\n"
                f"Всего: {sum_count_student}\n")
-    await func_send_msg(chat_id=chat_id, text=result)
+    keyboards_data = {
+        "type": "inline",
+        "buttons": [
+            {
+                "text": "Удалить случайно",
+                "callback_data": "random_remove"
+            }
+        ]
+    }
+    await func_send_msg(chat_id=chat_id, text=result, keyboards_data=keyboards_data)
     add_attendance_redis(chat_id, lesson_instances_ids)
 
 

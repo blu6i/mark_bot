@@ -67,10 +67,13 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, lis
     """
     # TODO: изменить запрос, чтобы не загружать лишние данные
     #  изменить данные в словари и хранить только нужные данные (Групп в словаре, время начала пары)
+    teacher_id = await get_teacher_id_by_tg_id(user_tg_id)
+    if not teacher_id:
+        return StatusRunMark.IS_NO_TEACHER, None
     now_date = datetime.now().date()
     now_time = datetime.now().time()
     lesson_data_list = []
-    teacher_id = await get_teacher_id_by_tg_id(user_tg_id)
+
     sql = """
         SELECT DISTINCT l.id, l.subject_id, l.lesson_type, l.start_time
         FROM mark_bot.lessons l
@@ -109,10 +112,11 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, lis
         results = await db_async.select(
             sql=sql,
             params=[lesson_id, subject_id, lesson_type, teacher_id],
-            fetchone=True
+            fetchone=False
         )
         if not results:
             continue
+        print(results)
         for ts_id, count, subject_name, group_id, group_name in results:
             lesson_data_list.append({
                 "lesson_id": lesson_id,

@@ -229,7 +229,7 @@ async def insert_student_attendance(student_id: int, lesson_instance_id: int) ->
     result = await db_async.insert(
         sql=sql,
         params=[student_id, lesson_instance_id],
-        fetchone=True
+        returning=True
     )
     if result:
         return StatusAttendanceMark.OK

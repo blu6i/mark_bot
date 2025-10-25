@@ -10,11 +10,24 @@ from core.requests import students, lessons, group
 def add_attendance_redis(chat_id: int, lesson_data: list[int]):
     redis_attendance.set(key=chat_id, value=json.dumps(lesson_data), ex=600)
 
-async def mark_student(user_tg_id: int) -> tuple[StatusMarkStudent, str | None | (list[tuple] | int)]:
+async def mark_student(user_tg_id: int, lesson_instance_id: int=None) -> tuple[StatusMarkStudent, str | None, dict | None]:
     # TODO: проверить на то, была ли сделана отметка ранее
     student_id = await students.get_student_id_by_tg_id(user_tg_id)
+
+    if lesson_instance_id:
+        status = await students.insert_student_attendance(student_id, lesson_instance_id)
+        if status == StatusAttendanceMark.OK:
+            text = "Вы отметились"
+            return StatusMarkStudent.OK, text, None
+        elif status == StatusAttendanceMark.ALREADY:
+            text = "Вы уже отметились"
+            return StatusMarkStudent.OK, text, None
+        else:
+            text = "Неизвестная ошибка"
+            return StatusMarkStudent.ERROR, text, None
+
     if not student_id:
-        return StatusMarkStudent.NO_STUDENT, None
+        return StatusMarkStudent.NO_STUDENT, None, None
 
     group_id = await students.get_student_group_id(student_id)
 
@@ -22,11 +35,11 @@ async def mark_student(user_tg_id: int) -> tuple[StatusMarkStudent, str | None |
     data_json = redis_instance.get(str(group_id))
     if not data_json:
         text = "Для вашей группы нет отметки"
-        return StatusMarkStudent.NO_MARK, text
+        return StatusMarkStudent.NO_MARK, text, None
     redis_data = json.loads(data_json)
     if not redis_data:
         text = "Для вашей группы нет отметки"
-        return StatusMarkStudent.NO_MARK, text
+        return StatusMarkStudent.NO_MARK, text, None
 
 
     if len(redis_data) == 1:
@@ -34,19 +47,28 @@ async def mark_student(user_tg_id: int) -> tuple[StatusMarkStudent, str | None |
         status = await students.insert_student_attendance(student_id, lesson_instance_id)
         if status == StatusAttendanceMark.OK:
             text = "Вы отметились"
-            return StatusMarkStudent.OK, text
+            return StatusMarkStudent.OK, text, None
         elif status == StatusAttendanceMark.ALREADY:
             text = "Вы уже отметились"
-            return StatusMarkStudent.OK, text
+            return StatusMarkStudent.OK, text, None
         else:
             text = "Неизвестная ошибка"
-            return StatusMarkStudent.ERROR, text
+            return StatusMarkStudent.ERROR, text, None
     else:
-        mark_info = [
-            (lessons.get_subject_name_lesson(int(lesson_instance_id)), int(lesson_instance_id))
-            for lesson_instance_id in redis_data.keys()
-        ]
-        return StatusMarkStudent.MORE_MARK, mark_info
+        text = ("У вашей группы запущенно несколько отметок.\n"
+                "\n"
+                "Выберите нужную:")
+        buttons_data = []
+        for lesson_instance_id in redis_data.keys():
+            buttons_data.append({
+                "text": lessons.get_subject_name_lesson(int(lesson_instance_id)),
+                "callback_data": f"lesson_{lesson_instance_id}"
+            })
+        keyboards_data = {
+            "type": "inline",
+            "buttons": buttons_data
+        }
+        return StatusMarkStudent.MORE_MARK, text, keyboards_data
 
 
 async def delete_random_students(count_student: int, sum_attendance: int, chat_id: int) -> str:
