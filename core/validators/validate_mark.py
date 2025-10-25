@@ -5,10 +5,11 @@ from core.requests import group, students
 from core.redis_config import redis_attendance
 
 
-async def validate_count_students(count_student: int, chat_id: int):
+async def validate_count_students(count_student: int, chat_id: int) -> tuple[StatusValidCountStudent, int | None, str | None, dict | None]:
     lesson_instances_ids = [int(i) for i in json.loads(redis_attendance.get(chat_id))]
     if not lesson_instances_ids:
-        return StatusValidCountStudent.NO_DATA, None
+        text = 'Время для случайного удаления студентов уже прошло.'
+        return StatusValidCountStudent.NO_DATA, None, text, None
 
     sum_count = 0
     for lesson_instances_id in lesson_instances_ids:
@@ -19,10 +20,36 @@ async def validate_count_students(count_student: int, chat_id: int):
 
     if extra_marks == 0:
         # Кол-во отметившихся = кол-во присутствующих
-        return StatusValidCountStudent.EQUALLY, sum_count
+        text = (f'Количество отмеченных студентов: {sum_count}\n'
+                '\n'
+                f'Вы ввели: {count_student}\n'
+                'Введенное количество студентов совпадает с отмеченными.\n'
+                'Введите другое число')
+        return StatusValidCountStudent.EQUALLY, sum_count, text, None
     elif extra_marks < 0:
         # Кол-во отметившихся < кол-во присутствующих. Сказать о проблеме с отметкой
-        return StatusValidCountStudent.OVER, sum_count
+        text = (f'Количество отмеченных студентов: {sum_count}\n'
+                '\n'
+                f'Вы ввели: {count_student}\n'
+                '\n'
+                'Введенное количество студентов превышает отмеченных.\n'
+                'Введите другое количество студентов')
+        return StatusValidCountStudent.OVER, sum_count, text, None
     else:
         # При случайно удалении останутся отметки
-        return StatusValidCountStudent.OK, sum_count
+        text = (f'Количество отмеченных студентов: {sum_count}\n'
+                '\n'
+                f'Вы ввели: {count_student}\n'
+                f'\n'
+                f'Подтвердите ввод или введите другое количество студентов')
+        buttons_data = [
+            {
+                "text": "Удалить",
+                "callback_data": "confirm_delete"
+            }
+        ]
+        keyboards = {
+            "type": "inline",
+            "buttons": buttons_data
+        }
+        return StatusValidCountStudent.OK, sum_count, text, keyboards

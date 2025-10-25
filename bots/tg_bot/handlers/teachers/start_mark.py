@@ -4,8 +4,10 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from core.enums import StatusRunMark
+from core.enums import StatusRunMark, StatusValidCountStudent
 from core.logic.teachers import started_mark
+from core.logic.students import mark
+from core.validators.validate_mark import validate_count_students
 
 from bots.tg_bot.handlers.keyboards import construct_keyboards
 from bots.tg_bot.config_bot import bot
@@ -19,6 +21,9 @@ class StartMarkState(StatesGroup):
     choice_name_lessons_state = State()
     choice_groups_state = State()
     confirm_custom_mark = State()
+
+    delete_random_student_state = State()
+    insert_count_student_state = State()
 
 
 @start_mark_router.message(Command("start_mark"))
@@ -139,5 +144,42 @@ async def start_custom_mark(callback: CallbackQuery, state: FSMContext):
     set_groups = data.get('set_group')
     user_tg_id = callback.from_user.id
     text = await started_mark.start_custom_mark(lesson_type, subject_id, set_groups, user_tg_id, message_mark_info)
+    await callback.message.edit_text(text)
+    await state.clear()
+
+
+@start_mark_router.callback_query(F.data.startswith("delete_random_student"))
+async def delete_random_student(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(StartMarkState.delete_random_student_state)
+    await callback.message.edit_text("Укажите количество студентов на паре")
+
+
+@start_mark_router.message(F.text,
+                           StateFilter(StartMarkState.delete_random_student_state,
+                                       StartMarkState.insert_count_student_state))
+async def insert_count_student(message: Message, state: FSMContext):
+    await state.set_state(StartMarkState.insert_count_student_state)
+    text = message.text
+    if not text.isdigit():
+        await message.answer("Введите число")
+        return
+    count_student = int(text)
+    user_tg_id = message.from_user.id
+    status, sum_count_student, text, keyboards_data = await validate_count_students(count_student, user_tg_id)
+    if status == StatusValidCountStudent.OK:
+        await state.update_data(sum_count_student=sum_count_student)
+        keyboards = construct_keyboards(keyboards_data)
+        await message.answer(text, reply_markup=keyboards)
+    else:
+        await message.answer(text)
+
+
+@start_mark_router.callback_query(F.data.startswith("confirm_delete"),
+                                  StateFilter(StartMarkState.insert_count_student_state))
+async def confirm_delete(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    sum_count_student = data.get('sum_count_student')
+    user_tg_id = callback.from_user.id
+    text = await mark.delete_random_students(sum_count_student, user_tg_id)
     await callback.message.edit_text(text)
     await state.clear()

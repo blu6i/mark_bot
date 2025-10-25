@@ -115,7 +115,7 @@ async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id,
         "buttons": [
             {
                 "text": "Удалить случайно",
-                "callback_data": "random_remove"
+                "callback_data": "delete_random_student"
             }
         ]
     }

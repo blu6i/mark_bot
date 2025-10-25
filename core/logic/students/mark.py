@@ -71,20 +71,20 @@ async def mark_student(user_tg_id: int, lesson_instance_id: int=None) -> tuple[S
         return StatusMarkStudent.MORE_MARK, text, keyboards_data
 
 
-async def delete_random_students(count_student: int, sum_attendance: int, chat_id: int) -> str:
+async def delete_random_students(count_random: int, chat_id: int) -> str:
     lesson_instances_ids = [int(i) for i in json.loads(redis_attendance.get(chat_id))]
     students_id = set()
     for lesson_instances_id in lesson_instances_ids:
         groups_id = await group.get_groups_id_by_instance_id(lesson_instances_id)
         for group_id, _ in groups_id:
             students_id.update(await students.get_students_id_instance(lesson_instances_id, group_id))
-
     result = []
-    count_random = (sum_attendance - count_student)
     random_students = random.sample(list(students_id), count_random)
     for attendance_id, student_id in random_students:
         await students.delete_attendance_student(attendance_id)
         name = await students.get_student_last_name(student_id)
         result.append(name)
     result.sort()
-    return ', '.join(result)
+    text = (f'Удалены студенты:\n'
+            f'{', '.join(result)}')
+    return text
