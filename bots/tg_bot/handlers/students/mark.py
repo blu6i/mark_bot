@@ -14,7 +14,7 @@ mark_students_router = Router()
 class MarkStudents(StatesGroup):
     mark_students_state = State()
 
-@mark_students_router.message(or_f(Command("mark"), F.text))
+@mark_students_router.message(or_f(Command("mark")))
 async def mark_students(message: Message, state: FSMContext):
     await state.clear()
     await state.set_state(MarkStudents.mark_students_state)

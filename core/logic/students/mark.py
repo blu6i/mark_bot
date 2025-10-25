@@ -11,7 +11,6 @@ def add_attendance_redis(chat_id: int, lesson_data: list[int]):
     redis_attendance.set(key=chat_id, value=json.dumps(lesson_data), ex=600)
 
 async def mark_student(user_tg_id: int, lesson_instance_id: int=None) -> tuple[StatusMarkStudent, str | None, dict | None]:
-    # TODO: проверить на то, была ли сделана отметка ранее
     student_id = await students.get_student_id_by_tg_id(user_tg_id)
 
     if lesson_instance_id:

@@ -4,7 +4,7 @@ from core.database_config import db_async
 from core.enums import StatusLoadExcel, StatusRunMark
 from core.requests.teachers import get_teacher_id_by_tg_id
 
-async def get_date_instances(user_tg_id: int) -> tuple[StatusLoadExcel, tuple[str] | None]:
+async def get_date_instances(user_tg_id: int) -> tuple[str] | None:
     """
     Поиск дат, за которые были пары у преподавателя
     :param user_tg_id: телеграм id преподавателя
@@ -24,9 +24,7 @@ async def get_date_instances(user_tg_id: int) -> tuple[StatusLoadExcel, tuple[st
         params=[teacher_id],
         fetchone=False
     )
-    if results:
-        return StatusLoadExcel.OK, results
-    return StatusLoadExcel.NO_DATA, None
+    return results
 
 
 async def get_subject_schedule_for_teacher(user_tg_id: int, date: str) -> tuple[StatusLoadExcel, list[tuple[int, str, str]] | None]:
@@ -49,14 +47,13 @@ async def get_subject_schedule_for_teacher(user_tg_id: int, date: str) -> tuple[
         AND ts.lesson_type = l.lesson_type
         WHERE ts.teacher_id = $1 AND l.date = $2
     """
+    date_obj = datetime.strptime(date, "%Y-%m-%d").date()
     results = await db_async.select(
         sql=sql,
-        params=[teacher_id, date],
+        params=[teacher_id, date_obj],
         fetchone=False
     )
-    if results:
-        return StatusLoadExcel.OK, results
-    return StatusLoadExcel.NO_DATA, None
+    return results
 
 
 async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, list[dict] | None]:
