@@ -89,4 +89,4 @@ class RedisDatabase:
 
 redis_instance = RedisDatabase(use_pool=True, prefix="lesson_instance")
 redis_auth_user = RedisDatabase(use_pool=False, prefix="auth_user")
-redis_attendance = RedisDatabase(use_pool=False, prefix="rd_attendance")
+redis_attendance = RedisDatabase(use_pool=True, prefix="rd_attendance")

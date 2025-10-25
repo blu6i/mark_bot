@@ -58,21 +58,19 @@ async def get_subject_schedule_for_teacher(user_tg_id: int, date: str) -> tuple[
 
 async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, list[dict] | None]:
     """
-    Получает актуальную пару для преподавателя
-    :param user_tg_id: id телеграм преподавателя
-    :return: словарь с данными о паре
+    Получает актуальную пару для преподавателя.
+    Учитывает, что одна пара может идти у нескольких групп (поточная).
     """
-    # TODO: изменить запрос, чтобы не загружать лишние данные
-    #  изменить данные в словари и хранить только нужные данные (Групп в словаре, время начала пары)
     teacher_id = await get_teacher_id_by_tg_id(user_tg_id)
     if not teacher_id:
         return StatusRunMark.IS_NO_TEACHER, None
+
     now_date = datetime.now().date()
     now_time = datetime.now().time()
-    lesson_data_list = []
 
-    sql = """
-        SELECT DISTINCT l.id, l.subject_id, l.lesson_type, l.start_time
+    # 1️⃣ Находим последнюю (по id) актуальную пару преподавателя
+    sql_last_lesson = """
+        SELECT l.id, l.subject_id, l.lesson_type, l.start_time, l.end_time
         FROM mark_bot.lessons l
         JOIN mark_bot.teacher_subjects ts
           ON ts.subject_id = l.subject_id
@@ -84,48 +82,59 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, lis
         WHERE l.date = $2
           AND l.start_time <= $3
           AND l.end_time >= $4
-        ORDER BY l.start_time DESC
+        ORDER BY l.id DESC
+        LIMIT 1
     """
-    results = await db_async.select(
-        sql=sql,
+    latest_lesson = await db_async.select(
+        sql=sql_last_lesson,
         params=[teacher_id, now_date, now_time, now_time],
-        fetchone=False
+        fetchone=True
     )
-    if not results:
+
+    if not latest_lesson:
         return StatusRunMark.NO_PAIR_TEACHER, None
 
-    for lesson_id, subject_id, lesson_type, _ in results:
-        sql = """
-            SELECT ts.id, ts.count, s.name AS subject_name, g.id AS group_id, g.name AS group_name
-            FROM mark_bot.teacher_subjects ts
-            JOIN mark_bot.subjects s ON s.id = ts.subject_id
-            JOIN mark_bot.groups g ON g.id = ts.group_id
-            JOIN mark_bot.lesson_groups lg ON lg.group_id = g.id
-            WHERE lg.lesson_id = $1
-              AND ts.subject_id = $2
-              AND ts.lesson_type = $3
-              AND ts.teacher_id = $4
-        """
-        results = await db_async.select(
-            sql=sql,
-            params=[lesson_id, subject_id, lesson_type, teacher_id],
-            fetchone=False
-        )
-        if not results:
-            continue
-        print(results)
-        for ts_id, count, subject_name, group_id, group_name in results:
-            lesson_data_list.append({
-                "lesson_id": lesson_id,
-                "teacher_subject_id": ts_id,
-                "pair_number": count,
-                "group_id": group_id,
-                "group_name": group_name,
-                "subject_name": subject_name,
-                "lesson_type": lesson_type,
-                "date": now_date,
-                "time": now_time
-            })
+    lesson_id, subject_id, lesson_type, start_time, end_time = latest_lesson
+
+    # 2️⃣ Берём все группы, которые имеют такую же пару (по сути, поточные)
+    sql_groups = """
+        SELECT ts.id, ts.count, s.name AS subject_name, g.id AS group_id, g.name AS group_name, l.id AS lesson_id
+        FROM mark_bot.lessons l
+        JOIN mark_bot.lesson_groups lg ON lg.lesson_id = l.id
+        JOIN mark_bot.groups g ON g.id = lg.group_id
+        JOIN mark_bot.teacher_subjects ts
+          ON ts.group_id = g.id
+         AND ts.subject_id = l.subject_id
+         AND ts.lesson_type = l.lesson_type
+         AND ts.teacher_id = $1
+        JOIN mark_bot.subjects s ON s.id = l.subject_id
+        WHERE l.date = $2
+          AND l.start_time = $3
+          AND l.end_time = $4
+          AND l.subject_id = $5
+          AND l.lesson_type = $6
+        ORDER BY g.name
+    """
+    results = await db_async.select(
+        sql=sql_groups,
+        params=[teacher_id, now_date, start_time, end_time, subject_id, lesson_type],
+        fetchone=False
+    )
+
+    lesson_data_list = []
+    for ts_id, count, subject_name, group_id, group_name, lesson_id in results:
+        lesson_data_list.append({
+            "lesson_id": lesson_id,
+            "teacher_subject_id": ts_id,
+            "pair_number": count,
+            "group_id": group_id,
+            "group_name": group_name,
+            "subject_name": subject_name,
+            "lesson_type": lesson_type,
+            "date": now_date,
+            "time": now_time
+        })
+
     return StatusRunMark.OK, lesson_data_list
 
 

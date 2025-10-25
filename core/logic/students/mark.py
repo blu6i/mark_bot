@@ -26,7 +26,9 @@ async def mark_student(user_tg_id: int, lesson_instance_id: int=None) -> tuple[S
             return StatusMarkStudent.ERROR, text, None
 
     if not student_id:
-        return StatusMarkStudent.NO_STUDENT, None, None
+        text = ("Вы не авторизованы.\n"
+                "Используйте /start для перезапуска бота.")
+        return StatusMarkStudent.NO_STUDENT, text, None
 
     group_id = await students.get_student_group_id(student_id)
 
@@ -40,6 +42,7 @@ async def mark_student(user_tg_id: int, lesson_instance_id: int=None) -> tuple[S
         text = "Для вашей группы нет отметки"
         return StatusMarkStudent.NO_MARK, text, None
 
+    print(redis_data)
 
     if len(redis_data) == 1:
         lesson_instance_id = int(list(redis_data.keys())[0])
@@ -59,8 +62,9 @@ async def mark_student(user_tg_id: int, lesson_instance_id: int=None) -> tuple[S
                 "Выберите нужную:")
         buttons_data = []
         for lesson_instance_id in redis_data.keys():
+            name_subject = await lessons.get_subject_name_lesson(int(lesson_instance_id))
             buttons_data.append({
-                "text": lessons.get_subject_name_lesson(int(lesson_instance_id)),
+                "text": name_subject,
                 "callback_data": f"lesson_{lesson_instance_id}"
             })
         keyboards_data = {

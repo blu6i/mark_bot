@@ -55,11 +55,11 @@ async def start_mark(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     mark_data = data.get("mark_data")
     if not mark_data:
-        await callback.answer("Неизвестная ошибка")
+        await callback.answer("Неизвестная ошибка.")
         return
     await started_mark.started_mark(mark_data, callback.from_user.id, message_mark_info)
     text = ("Отметка успешно запущена.\n"
-            "Ожидайте подтверждение о завершении")
+            "Ожидайте подтверждение о завершении.")
     await callback.message.edit_text(text)
     await state.clear()
 
@@ -151,7 +151,7 @@ async def start_custom_mark(callback: CallbackQuery, state: FSMContext):
 @start_mark_router.callback_query(F.data.startswith("delete_random_student"))
 async def delete_random_student(callback: CallbackQuery, state: FSMContext):
     await state.set_state(StartMarkState.delete_random_student_state)
-    await callback.message.edit_text("Укажите количество студентов на паре")
+    await callback.message.edit_text("Укажите количество студентов на паре.")
 
 
 @start_mark_router.message(F.text,
@@ -161,7 +161,7 @@ async def insert_count_student(message: Message, state: FSMContext):
     await state.set_state(StartMarkState.insert_count_student_state)
     text = message.text
     if not text.isdigit():
-        await message.answer("Введите число")
+        await message.answer("Введите неотрицательное целое число.")
         return
     count_student = int(text)
     user_tg_id = message.from_user.id

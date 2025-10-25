@@ -16,16 +16,16 @@ class MarkStudents(StatesGroup):
 
 @mark_students_router.message(or_f(Command("mark")))
 async def mark_students(message: Message, state: FSMContext):
-    await state.clear()
-    await state.set_state(MarkStudents.mark_students_state)
     user_tg_id = message.from_user.id
     status, text, keyboards_data = await mark.mark_student(user_tg_id)
     if status == StatusMarkStudent.MORE_MARK:
+        await state.clear()
+        await state.set_state(MarkStudents.mark_students_state)
         keyboards = construct_keyboards(keyboards_data)
         await message.answer(text, reply_markup=keyboards)
     else:
         await message.answer(text)
-        await state.clear()
+        # await state.clear()
 
 
 @mark_students_router.callback_query(F.data.startswith('lesson_'),

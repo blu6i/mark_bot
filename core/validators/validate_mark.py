@@ -25,7 +25,7 @@ async def validate_count_students(count_student: int, chat_id: int) -> tuple[Sta
                 f'Вы ввели: {count_student}\n'
                 'Введенное количество студентов совпадает с отмеченными.\n'
                 'Введите другое число')
-        return StatusValidCountStudent.EQUALLY, sum_count, text, None
+        return StatusValidCountStudent.EQUALLY, extra_marks, text, None
     elif extra_marks < 0:
         # Кол-во отметившихся < кол-во присутствующих. Сказать о проблеме с отметкой
         text = (f'Количество отмеченных студентов: {sum_count}\n'
@@ -34,7 +34,7 @@ async def validate_count_students(count_student: int, chat_id: int) -> tuple[Sta
                 '\n'
                 'Введенное количество студентов превышает отмеченных.\n'
                 'Введите другое количество студентов')
-        return StatusValidCountStudent.OVER, sum_count, text, None
+        return StatusValidCountStudent.OVER, extra_marks, text, None
     else:
         # При случайно удалении останутся отметки
         text = (f'Количество отмеченных студентов: {sum_count}\n'
@@ -52,4 +52,4 @@ async def validate_count_students(count_student: int, chat_id: int) -> tuple[Sta
             "type": "inline",
             "buttons": buttons_data
         }
-        return StatusValidCountStudent.OK, sum_count, text, keyboards
+        return StatusValidCountStudent.OK, extra_marks, text, keyboards
