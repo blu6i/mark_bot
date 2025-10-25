@@ -90,26 +90,36 @@ class Database:
                 return result
 
 
-    async def execute(self, sql: str, params: Optional[List[Any]] = None):
+    async def execute(self, sql: str, params: Optional[List[Any]] = None, returning: bool = False):
         if self._async_mode:
             async with self.connection_async() as conn:
-                return await conn.execute(sql, *(params or ()))
+                if returning:
+                    row = await conn.fetchrow(sql, *(params or ()))
+                    return row['id'] if row else None
+                else:
+                    await conn.execute(sql, *(params or ()))
+                    return True
         else:
             with self.connection_sync() as conn:
                 cur = conn.cursor()
                 cur.execute(sql, params or ())
+                if returning:
+                    res = cur.fetchone()
+                    cur.close()
+                    return res[0] if res else None
+                conn.commit()
                 cur.close()
                 return True
 
 
-    async def insert(self, sql: str, params: Optional[List[Any]] = None):
-        return await self.execute(sql, params)
+    async def insert(self, sql: str, params: Optional[List[Any]] = None, returning: bool = False):
+        return await self.execute(sql, params, returning=returning)
 
-    async def update(self, sql: str, params: Optional[List[Any]] = None):
-        return await self.execute(sql, params)
+    async def update(self, sql: str, params: Optional[List[Any]] = None, returning: bool = False):
+        return await self.execute(sql, params, returning=returning)
 
-    async def delete(self, sql: str, params: Optional[List[Any]] = None):
-        return await self.execute(sql, params)
+    async def delete(self, sql: str, params: Optional[List[Any]] = None, returning: bool = False):
+        return await self.execute(sql, params, returning=returning)
 
 
     async def close_pool(self):

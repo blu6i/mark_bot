@@ -108,7 +108,7 @@ async def get_lesson_types_teacher(user_tg_id: int) -> list[str]:
     :param user_tg_id: id телеграма преподавателя
     :return: список типов занятий
     """
-    teacher_id = get_teacher_id_by_tg_id(user_tg_id)
+    teacher_id = await get_teacher_id_by_tg_id(user_tg_id)
     sql = """
         SELECT DISTINCT lesson_type
         FROM mark_bot.teacher_subjects
@@ -123,14 +123,14 @@ async def get_lesson_types_teacher(user_tg_id: int) -> list[str]:
     return [result[0] for result in results]
 
 
-async def get_subjects_type_teacher(lesson_type: str, user_tg_id: int) -> list:
+async def get_name_subjects_teacher(lesson_type: str, user_tg_id: int) -> list:
     """
     Получает типы занятий, которые проводит преподаватель
     :param lesson_type: тип занятия
     :param user_tg_id: id телеграма преподавателя
     :return: список типов занятий
     """
-    teacher_id = get_teacher_id_by_tg_id(user_tg_id)
+    teacher_id = await get_teacher_id_by_tg_id(user_tg_id)
     sql = """
         SELECT DISTINCT s.id, s.name
         FROM mark_bot.teacher_subjects ts
@@ -154,7 +154,7 @@ async def get_groups_teacher(subject_id: int, user_tg_id: int, lesson_type: str)
     :param lesson_type: тип занятия
     :return: список групп
     """
-    teacher_id = get_teacher_id_by_tg_id(user_tg_id)
+    teacher_id = await get_teacher_id_by_tg_id(user_tg_id)
     sql = """
         SELECT DISTINCT g.id, g.name
         FROM mark_bot.teacher_subjects ts

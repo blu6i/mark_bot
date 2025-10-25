@@ -1,10 +1,15 @@
 import asyncio
 import json
+from logging import captureWarnings
 
 from core.enums import StatusRunMark
 from core.requests import lessons, teachers, group, students
 from core.redis_config import redis_instance
 from core.logic.students.mark import add_attendance_redis
+from core.requests.group import get_group_name
+from core.requests.lessons import get_subject_name
+from core.requests.teachers import get_lesson_types_teacher, get_name_subjects_teacher, get_groups_teacher
+
 
 def _construct_info_msg(lesson_data: list[dict]) -> str:
     """
@@ -31,7 +36,7 @@ def _construct_info_msg(lesson_data: list[dict]) -> str:
     return info_msg
 
 
-async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dict | None]:
+async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dict | None, list[dict] | None]:
     """
     Автоматическое создание отметки
     :param user_tg_id: id телеграм преподавателя
@@ -42,7 +47,7 @@ async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dic
         text = """
         Вы не преподаватель.
         """
-        return StatusRunMark.IS_NO_TEACHER, text, None
+        return StatusRunMark.IS_NO_TEACHER, text, None, None
     status, mark_data = await lessons.get_actual_lesson_teacher(teacher_id)
     if status == StatusRunMark.NO_PAIR_TEACHER:
         text = """
@@ -54,11 +59,11 @@ async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dic
             "buttons": [
                 {
                     "text": "Создать",
-                    "callback_data": "start_mark"
+                    "callback_data": "create_custom_mark"
                 }
             ]
         }
-        return StatusRunMark.NO_PAIR_TEACHER, text, keyboards_data
+        return StatusRunMark.NO_PAIR_TEACHER, text, keyboards_data, None
     text = _construct_info_msg(mark_data)
     keyboards_data = {
         "type": "inline",
@@ -73,7 +78,7 @@ async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dic
             }
         ]
     }
-    return StatusRunMark.OK, text, keyboards_data
+    return StatusRunMark.OK, text, keyboards_data, mark_data
 
 
 async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id, ttl: int = 180):
@@ -128,3 +133,102 @@ async def started_mark(mark_data: list[dict], user_tg_id: int, func_answer):
         data[str(lesson_instance_id)] = 'pair'
         redis_instance.set(key=group_id, value=json.dumps(data), ex=600)
     asyncio.create_task(_delay_action(func_answer, lesson_instance_ids, user_tg_id, 30))
+
+
+# --==[Регистрация новой пары]==--
+
+async def get_type_lesson(user_tg_id: int):
+    type_lessons = await get_lesson_types_teacher(user_tg_id)
+    buttons_data = []
+    for type_lesson in type_lessons:
+        buttons_data.append({
+            'text': type_lesson,
+            'callback_data': f"type_{type_lesson.replace(' ', '-')}"
+        })
+    text = "Выберите тип пары:"
+    keyboards_data = {
+        "type": "inline",
+        "buttons": buttons_data
+    }
+    return text, keyboards_data
+
+async def get_name_lesson(user_tg_id: int, lesson_type: str):
+    name_lessons = await get_name_subjects_teacher(lesson_type, user_tg_id)
+    buttons_data = []
+    for id_, name_lesson in name_lessons:
+        buttons_data.append({
+            "text": name_lesson,
+            "callback_data": f"subject_{id_}"
+        })
+    buttons_data.append({
+        "text": "Назад",
+        "callback_data": "back_type_lessons"
+    })
+    text = "Выберите название предмета"
+    keyboards_data = {
+        "type": "inline",
+        "buttons": buttons_data
+    }
+    return text, keyboards_data
+
+async def get_groups_teachers(subject_id: int, tg_user_id: int, lesson_type: str, selected: set[int]):
+    groups = await get_groups_teacher(subject_id, tg_user_id, lesson_type)
+    buttons_data = []
+
+    for idx, name in groups:
+        label = f"✅ {name}" if idx in selected else name
+        buttons_data.append({
+            "text": label,
+            "callback_data": f"group_{idx}"
+        })
+
+    buttons_data.append({
+        "text": "Назад",
+        "callback_data": "back_name_lessons"
+    })
+    buttons_data.append({
+        "text": "Готово",
+        "callback_data": "confirm_choice_group"
+    })
+    text = "Выберите группы"
+    keyboards_data = {
+        "type": "inline",
+        "buttons": buttons_data
+    }
+    return text, keyboards_data
+
+
+async def get_custom_mark_info(lesson_type: str, subject_id: int, groups: list[int], user_tg_id: int):
+    groups_name = ''
+    for group_id in groups:
+        group_name = await get_group_name(group_id)
+        groups_name += f"{group_name}\n"
+    subject_name = await get_subject_name(subject_id)
+    text = (f"Предмет: {subject_name}\n"
+            f"Тип пары: {lesson_type}\n"
+            f"Группы:\n"
+            f"{groups_name}\n"
+            f"\n"
+            f"Запустить?")
+    buttons_data = [
+        {
+            "text": "Да",
+            "callback_data": "start_custom_mark"
+        },
+        {
+            "text": "Назад",
+            "callback_data": "back_group"
+        }
+    ]
+    keyboards_data = {
+        "type": "inline",
+        "buttons": buttons_data
+    }
+    return text, keyboards_data
+
+
+async def start_custom_mark(lesson_type: str, subject_id: int, groups: list[int], user_tg_id: int, func_answer):
+    data_custom_lesson = await lessons.insert_custom_lesson(lesson_type, subject_id, groups, user_tg_id)
+    await started_mark(data_custom_lesson, user_tg_id, func_answer)
+    text = "Отметка запущена"
+    return text

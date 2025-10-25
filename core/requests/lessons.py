@@ -189,11 +189,11 @@ async def insert_lesson_instance(mark_data: list[dict]) -> list[int]:
                 VALUES ($1, $2)
                 RETURNING id
             """
-            result = await db_async.insert(
+            lesson_instance_id = await db_async.insert(
                 sql=sql,
-                params=[lesson_id, pair_number]
+                params=[lesson_id, pair_number],
+                returning=True
             )
-            lesson_instance_id = result[0]
 
         # 3. Связь с группой
         sql = """
@@ -233,7 +233,7 @@ async def insert_custom_lesson(type_: str, subject_id: int, groups: list[int], u
     :param user_tg_id: id телеграм преподавателя
     :return: данные пары
     """
-    teacher_id = get_teacher_id_by_tg_id(user_tg_id)
+    teacher_id = await get_teacher_id_by_tg_id(user_tg_id)
     date = datetime.now().date()
     start_time = datetime.now().time().replace(microsecond=0)
     end_time = (datetime.now() + timedelta(minutes=5)).time().replace(microsecond=0)
@@ -245,7 +245,8 @@ async def insert_custom_lesson(type_: str, subject_id: int, groups: list[int], u
     """
     lesson_id = await db_async.insert(
         sql=sql,
-        params=[subject_id, date, start_time, end_time, type_]
+        params=[subject_id, date, start_time, end_time, type_],
+        returning=True
     )
 
     data = []
@@ -290,7 +291,7 @@ async def get_subject_name(subject_id: int) -> str | None:
     sql = """
         SELECT name
         FROM mark_bot.subjects
-        WHERE id = %1
+        WHERE id = $1
     """
     result = await db_async.select(
         sql=sql,
