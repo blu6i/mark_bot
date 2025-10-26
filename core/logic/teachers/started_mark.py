@@ -14,7 +14,7 @@ from core.requests.teachers import get_lesson_types_teacher, get_name_subjects_t
 from core.utils.loggers import log
 
 load_dotenv()
-TTL_MARK = int(getenv("TTL_MARK"))
+TTL_MARK = int(getenv("TTL_MARK"), 180)
 
 def _construct_info_msg(lesson_data: list[dict]) -> str:
     """
