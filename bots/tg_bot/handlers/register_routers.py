@@ -6,6 +6,7 @@ from .teachers.start_mark import start_mark_router
 from .students.mark import mark_students_router
 from .teachers.print_excel_mark import print_excel_marks_router
 from .admins.generate_invite_link import generate_invite_link_router
+from .admins.parser_schedule import parser_router
 
 def register_router() -> Router:
     main_router = Router()
@@ -15,4 +16,5 @@ def register_router() -> Router:
     main_router.include_router(print_excel_marks_router)
     main_router.include_router(generate_invite_link_router)
     main_router.include_router(help_msg_router)
+    main_router.include_router(parser_router)
     return main_router
