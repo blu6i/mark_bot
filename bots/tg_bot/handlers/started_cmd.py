@@ -9,6 +9,7 @@ from core.logic.auth_user import auth_teacher, check_auth_user, auth_student
 from core.logic.keyboards_data import get_keyboard_commands
 
 from bots.tg_bot.handlers.keyboards import construct_keyboards
+from bots.tg_bot.handlers.filters import IsNotCommand, BlackListWord
 
 started_router = Router()
 
@@ -54,7 +55,9 @@ async def cmd_kb(message: Message):
                          reply_markup=keyboards)
 
 @started_router.message(F.text,
-                        AuthUser.waiting_fullname)
+                        AuthUser.waiting_fullname,
+                        BlackListWord(),
+                        IsNotCommand())
 async def process_fullname(message: Message, state: FSMContext):
     """
     Обработка ввода ФИО
