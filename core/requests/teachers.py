@@ -64,7 +64,7 @@ async def get_teacher_id_by_fullname(fullname: dict) -> int | None:
     :return: id преподавателя в базе данных
     """
     sql = """
-        SELECT id FROM mark_bot.teachers
+        SELECT id, tg_id FROM mark_bot.teachers
         WHERE first_name = $1
         AND last_name = $2
         AND middle_name IS NOT DISTINCT FROM $3
@@ -74,7 +74,7 @@ async def get_teacher_id_by_fullname(fullname: dict) -> int | None:
         params=[fullname["first_name"], fullname["last_name"], fullname["middle_name"]],
         fetchone=True
     )
-    return result[0] if result else None
+    return result if result else None
 
 
 async def get_teacher_fullname(teacher_id: int) -> dict | None:
@@ -171,7 +171,12 @@ async def get_groups_teacher(subject_id: int, user_tg_id: int, lesson_type: str)
     return results
 
 async def main():
-    pass
+    fio = {
+            "last_name": "Коржавина",
+            "first_name": "Анастасия",
+            "middle_name": "Сергеевна",
+        }
+    print(await get_teacher_id_by_fullname(fio))
 
 
 if __name__ == "__main__":

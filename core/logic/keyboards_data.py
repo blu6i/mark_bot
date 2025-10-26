@@ -39,7 +39,7 @@ async def get_keyboard_commands(user_tg_id: int) -> dict | None:
         }
     if user_tg_id in ADMINS:
         keyboards["buttons"].append({
-            "text": "Создать ссылку для преподавателя",
+            "text": "Пригласить преподавателя",
             "callback_data": "create_invitation_link_teacher"
         })
         keyboards["buttons"].append({

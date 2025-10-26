@@ -50,3 +50,8 @@ class StatusValidCountStudent(Enum):
     OVER = 2
     EQUALLY = 3
     NO_DATA = 4
+
+class StatusInviteLink(Enum):
+    OK = 1
+    ALREADY_TG = 2
+    NOT_FOUND = 3
