@@ -46,7 +46,7 @@ async def prestart_mark(message: Message, state: FSMContext):
         await message.answer(text)
 
 
-async def message_mark_info(chat_id: int, text: str, keyboards_data: dict):
+async def send_message_info_marks(chat_id: int, text: str, keyboards_data: dict):
     await bot.send_message(chat_id=chat_id, text=text, reply_markup=construct_keyboards(keyboards_data))
 
 
@@ -58,7 +58,7 @@ async def start_mark(callback: CallbackQuery, state: FSMContext):
     if not mark_data:
         await callback.answer("Неизвестная ошибка.")
         return
-    await started_mark.started_mark(mark_data, callback.from_user.id, message_mark_info)
+    await started_mark.started_mark(mark_data, callback.from_user.id, send_message_info_marks)
     text = ("Отметка успешно запущена.\n"
             "Ожидайте подтверждение о завершении.")
     await callback.message.edit_text(text)
@@ -144,7 +144,7 @@ async def start_custom_mark(callback: CallbackQuery, state: FSMContext):
     subject_id = data.get('subject_id')
     set_groups = data.get('set_group')
     user_tg_id = callback.from_user.id
-    text = await started_mark.start_custom_mark(lesson_type, subject_id, set_groups, user_tg_id, message_mark_info)
+    text = await started_mark.start_custom_mark(lesson_type, subject_id, set_groups, user_tg_id, send_message_info_marks)
     await callback.message.edit_text(text)
     await state.clear()
 

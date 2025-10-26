@@ -1,10 +1,11 @@
 import asyncio
 import json
+from datetime import datetime, timedelta
 from logging import captureWarnings
 
 from core.enums import StatusRunMark
 from core.requests import lessons, teachers, group, students
-from core.redis_config import redis_instance
+from core.redis_config import redis_instance, redis_scheduled_tasks
 from core.logic.students.mark import add_attendance_redis
 from core.requests.group import get_group_name
 from core.requests.lessons import get_subject_name
@@ -138,6 +139,25 @@ async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id,
     add_attendance_redis(chat_id, lesson_instances_ids)
 
 
+async def restore_tasks_from_redis(func_answer):
+    # Получаем все ключи задач
+    keys = redis_scheduled_tasks.keys("*")
+    now = datetime.now()
+
+    for key in keys:
+        correct_key = key.removeprefix("task:")
+        task_json = redis_scheduled_tasks.get(correct_key)
+        if not task_json:
+            continue
+
+        task_data = json.loads(task_json)
+        lesson_instance_ids = task_data["lesson_instance_ids"]
+        user_tg_id = task_data["user_tg_id"]
+        execute_at = datetime.fromisoformat(task_data["execute_at"])
+        remaining = max(int((execute_at - now).total_seconds()), 0)
+        asyncio.create_task(_delay_action(func_answer, lesson_instance_ids, user_tg_id, remaining))
+
+
 async def started_mark(mark_data: list[dict], user_tg_id: int, func_answer):
     """
     Создание отметок для групп + запись в redis
@@ -145,6 +165,7 @@ async def started_mark(mark_data: list[dict], user_tg_id: int, func_answer):
     :param mark_data: данные для отметок
     :param user_tg_id: телеграм ид преподавателя
     """
+    FREEZE_TIME = 30
     lesson_instance_ids = await lessons.insert_lesson_instance(mark_data)
     for item, lesson_instance_id in zip(mark_data, lesson_instance_ids):
         group_id = str(item["group_id"])
@@ -154,8 +175,19 @@ async def started_mark(mark_data: list[dict], user_tg_id: int, func_answer):
         else:
             data = {}
         data[str(lesson_instance_id)] = 'pair'
-        redis_instance.set(key=group_id, value=json.dumps(data), ex=600)
-    asyncio.create_task(_delay_action(func_answer, lesson_instance_ids, user_tg_id, 30))
+        redis_instance.set(key=group_id, value=json.dumps(data), ex=FREEZE_TIME*2)
+
+    # Создаём запись о задаче в Redis для восстановления
+    execute_at = datetime.now() + timedelta(seconds=FREEZE_TIME*2)
+    task_data = {
+        "lesson_instance_ids": lesson_instance_ids,
+        "user_tg_id": user_tg_id,
+        "execute_at": execute_at.isoformat()
+    }
+    task_key = f"{user_tg_id}:{lesson_instance_ids[0]}"
+    redis_scheduled_tasks.set(task_key, json.dumps(task_data), FREEZE_TIME)
+
+    asyncio.create_task(_delay_action(func_answer, lesson_instance_ids, user_tg_id, FREEZE_TIME))
 
 
 # --==[Регистрация новой пары]==--

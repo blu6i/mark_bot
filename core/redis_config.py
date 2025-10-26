@@ -86,8 +86,16 @@ class RedisDatabase:
         with self.connection() as r:
             return r.exists(self._full_key(key)) > 0
 
+    def keys(self, pattern="*"):
+        """
+        Возвращает список ключей, соответствующих шаблону
+        :param pattern: шаблон, например "task:*"
+        """
+        with self.connection() as r:
+            return r.keys(self._full_key(pattern))
+
 
 redis_instance = RedisDatabase(use_pool=True, prefix="lesson_instance")
-redis_auth_user = RedisDatabase(use_pool=False, prefix="auth_user")
 redis_attendance = RedisDatabase(use_pool=True, prefix="rd_attendance")
 redis_link_teacher = RedisDatabase(use_pool=False, prefix="rd_link_teacher")
+redis_scheduled_tasks = RedisDatabase(use_pool=False, prefix="task")
