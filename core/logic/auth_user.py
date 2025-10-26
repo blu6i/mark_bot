@@ -20,8 +20,6 @@ async def check_auth_user(user_tg_id: int):
 
 
 async def auth_teacher(key: str, user_tg_id: int) -> tuple[StatusAuthUser, str]:
-    # TODO: адоптировать функцию для авторизации студента
-    #  В редис будем хранить в значении тип авторизации (teacher, student) и тут будет проверять тип авторизации
     teacher_id = redis_link_teacher.get(key)
     if not teacher_id:
         text = ("Ссылка для авторизации устарела.\n"

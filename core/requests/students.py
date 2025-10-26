@@ -247,4 +247,23 @@ async def insert_student_attendance(student_id: int, lesson_instance_id: int) ->
     return StatusAttendanceMark.ERROR
 
 
-
+async def is_instance_group_student(instance_id: int, student_id: int) -> bool:
+    """
+    Проверяет, относится ли студент к группе занятия
+    :param instance_id: id занятия
+    :param student_id: id студента
+    :return: True если студент относится к группе занятия, False если нет
+    """
+    sql = """
+        SELECT 1 FROM mark_bot.lesson_instance_groups
+        WHERE lesson_instance_id = $1 AND group_id = (
+            SELECT group_id FROM mark_bot.students
+            WHERE id = $2
+        )
+    """
+    result = await db_async.select(
+        sql=sql,
+        params=[instance_id, student_id],
+        fetchone=True
+    )
+    return result is not None

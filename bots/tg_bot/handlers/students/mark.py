@@ -37,5 +37,8 @@ async def mark_students_callback(callback: CallbackQuery, state: FSMContext):
     instance_id = int(callback.data.removeprefix('lesson_'))
     user_tg_id = callback.from_user.id
     status, text, _ = await mark.mark_student(user_tg_id, instance_id)
-    await callback.message.edit_text(text)
+    if status == StatusMarkStudent.NOT_YOUR_MARK:
+        await callback.answer(text)
+    else:
+        await callback.message.edit_text(text)
     await state.clear()

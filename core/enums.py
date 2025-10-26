@@ -32,6 +32,7 @@ class StatusMarkStudent(Enum):
     NO_STUDENT = 4
     NO_MARK = 5
     MORE_MARK  = 6
+    NOT_YOUR_MARK = 7
 
 
 class StatusAttendanceMark(Enum):
