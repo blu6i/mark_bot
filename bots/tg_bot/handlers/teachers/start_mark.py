@@ -31,21 +31,19 @@ class StartMarkState(StatesGroup):
                            CorrectWordCommand(['запустить отметку', '/start_mark']),
                            IsTeacher())
 async def prestart_mark(message: Message, state: FSMContext):
-    # TODO: в prestart сделать обработку ошибку при автоматической паре, чтобы
-    #  возвращала клавиатуру и текст, чтобы препод сам создавать пару
     await state.clear()
     user_tg_id = message.from_user.id
     status, text, keyboards_data, mark_data = await started_mark.prestart_mark(user_tg_id)
     await state.set_state(StartMarkState.prestart_mark_state)
     if status == StatusRunMark.OK:
-        await message.answer(text, reply_markup=construct_keyboards(keyboards_data))
+        keyboards = construct_keyboards(keyboards_data)
+        await message.answer(text, reply_markup=keyboards)
         await state.update_data(mark_data=mark_data)
-    elif status == StatusRunMark.NO_PAIR_TEACHER:
-        await message.answer(text, reply_markup=construct_keyboards(keyboards_data))
-    elif status == StatusRunMark.IS_NO_TEACHER:
-        await message.answer(text)
+    elif status in (StatusRunMark.NO_PAIR_TEACHER, StatusRunMark.ERROR):
+        keyboards = construct_keyboards(keyboards_data)
+        await message.answer(text, reply_markup=keyboards)
     else:
-        await message.answer(text="Неизвестная ошибка")
+        await message.answer(text)
 
 
 async def message_mark_info(chat_id: int, text: str, keyboards_data: dict):

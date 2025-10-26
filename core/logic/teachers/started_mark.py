@@ -9,7 +9,7 @@ from core.logic.students.mark import add_attendance_redis
 from core.requests.group import get_group_name
 from core.requests.lessons import get_subject_name
 from core.requests.teachers import get_lesson_types_teacher, get_name_subjects_teacher, get_groups_teacher
-
+from core.utils.loggers import log
 
 def _construct_info_msg(lesson_data: list[dict]) -> str:
     """
@@ -42,17 +42,46 @@ async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dic
     :param user_tg_id: id телеграм преподавателя
     :return: Статус ответ, текст (Опционально) и данные для кнопки (Опционально)
     """
-    status, mark_data = await lessons.get_actual_lesson_teacher(user_tg_id)
-    if status == StatusRunMark.IS_NO_TEACHER:
-        text = """
-        Вы не преподаватель.
-        """
-        return StatusRunMark.IS_NO_TEACHER, text, None, None
-    if status == StatusRunMark.NO_PAIR_TEACHER:
-        text = """
-        Не удалось найти ваши текущие пары.\n
-        Хотите создать отметку самостоятельно?
-        """
+    try:
+        status, mark_data = await lessons.get_actual_lesson_teacher(user_tg_id)
+        if status == StatusRunMark.IS_NO_TEACHER:
+            text = """
+            Вы не преподаватель.
+            """
+            return StatusRunMark.IS_NO_TEACHER, text, None, None
+        if status == StatusRunMark.NO_PAIR_TEACHER:
+            text = """
+            Не удалось найти ваши текущие пары.\n
+            Хотите создать отметку самостоятельно?
+            """
+            keyboards_data = {
+                "type": "inline",
+                "buttons": [
+                    {
+                        "text": "Создать",
+                        "callback_data": "create_custom_mark"
+                    }
+                ]
+            }
+            return StatusRunMark.NO_PAIR_TEACHER, text, keyboards_data, None
+        text = _construct_info_msg(mark_data)
+        keyboards_data = {
+            "type": "inline",
+            "buttons": [
+                {
+                    "text": "Да",
+                    "callback_data": "start_mark"
+                },
+                {
+                    "text": "Нет",
+                    "callback_data": "create_custom_mark"
+                }
+            ]
+        }
+        return StatusRunMark.OK, text, keyboards_data, mark_data
+    except Exception as e:
+        text = ("Неизвестная ошибка при формировании автоматическое отметки.\n"
+                "Вы можете попробовать ввести команду еще раз или создать отметку вручную.")
         keyboards_data = {
             "type": "inline",
             "buttons": [
@@ -62,22 +91,8 @@ async def prestart_mark(user_tg_id: int) -> tuple[StatusRunMark, str | None, dic
                 }
             ]
         }
-        return StatusRunMark.NO_PAIR_TEACHER, text, keyboards_data, None
-    text = _construct_info_msg(mark_data)
-    keyboards_data = {
-        "type": "inline",
-        "buttons": [
-            {
-                "text": "Да",
-                "callback_data": "start_mark"
-            },
-            {
-                "text": "Нет",
-                "callback_data": "create_custom_mark"
-            }
-        ]
-    }
-    return StatusRunMark.OK, text, keyboards_data, mark_data
+        log.error(f"Ошибка при формировании автоматической отметки: {e}")
+        return StatusRunMark.ERROR, text, keyboards_data, None
 
 
 async def _delay_action(func_send_msg, lesson_instances_ids: list[int], chat_id, ttl: int = 180):

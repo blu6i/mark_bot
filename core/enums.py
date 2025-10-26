@@ -22,6 +22,7 @@ class StatusRunMark(Enum):
     HAS_STARTED_MARK = 2
     NO_PAIR_TEACHER = 3
     IS_NO_TEACHER = 4
+    ERROR = 5
 
 
 class StatusMarkStudent(Enum):
