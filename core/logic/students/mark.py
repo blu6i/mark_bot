@@ -45,8 +45,6 @@ async def mark_student(user_tg_id: int, lesson_instance_id: int=None) -> tuple[S
         text = "Для вашей группы нет отметки"
         return StatusMarkStudent.NO_MARK, text, None
 
-    print(redis_data)
-
     if len(redis_data) == 1:
         lesson_instance_id = int(list(redis_data.keys())[0])
         status = await students.insert_student_attendance(student_id, lesson_instance_id)

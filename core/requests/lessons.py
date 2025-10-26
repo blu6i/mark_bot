@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 
 from core.database_config import db_async
 from core.enums import StatusLoadExcel, StatusRunMark
@@ -65,10 +65,13 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, lis
     if not teacher_id:
         return StatusRunMark.IS_NO_TEACHER, None
 
-    now_date = datetime.now().date()
-    now_time = datetime.now().time()
+    # now_date = datetime.now().date()
+    # now_time = datetime.now().time()
 
-    # 1️⃣ Находим последнюю (по id) актуальную пару преподавателя
+    now_date = date(2025, 10, 28)
+    now_time = time(14, 30)
+
+    # Находим последнюю (по id) актуальную пару преподавателя
     sql_last_lesson = """
         SELECT l.id, l.subject_id, l.lesson_type, l.start_time, l.end_time
         FROM mark_bot.lessons l
@@ -96,7 +99,7 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, lis
 
     lesson_id, subject_id, lesson_type, start_time, end_time = latest_lesson
 
-    # 2️⃣ Берём все группы, которые имеют такую же пару (по сути, поточные)
+    # Берём все группы, которые имеют такую же пару (по сути, поточные)
     sql_groups = """
         SELECT ts.id, ts.count, s.name AS subject_name, g.id AS group_id, g.name AS group_name, l.id AS lesson_id
         FROM mark_bot.lessons l
@@ -131,8 +134,8 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, lis
             "group_name": group_name,
             "subject_name": subject_name,
             "lesson_type": lesson_type,
-            "date": now_date,
-            "time": now_time
+            "date": now_date.strftime("%d.%m.%Y"),
+            "time": f"{start_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}"
         })
 
     return StatusRunMark.OK, lesson_data_list

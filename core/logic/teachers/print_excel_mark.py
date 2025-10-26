@@ -7,6 +7,8 @@ from core.requests.lessons import get_date_instances, get_subject_schedule_for_t
 from core.enums import StatusLoadExcel
 from core.requests.students import get_student_attendance
 
+def _str_to_russian_date(date: str):
+    return date[8:10] + '.' + date[5:7] + '.' + date[0:4]
 
 async def get_date_marks(user_tg_id: int):
     date_list = await get_date_instances(user_tg_id)
@@ -18,7 +20,7 @@ async def get_date_marks(user_tg_id: int):
     for item in date_list:
         date = str(item[0])
         buttons_data.append({
-            "text": date,
+            "text": _str_to_russian_date(date),
             "callback_data": f"date_{date}"
         })
     keyboards_data = {
