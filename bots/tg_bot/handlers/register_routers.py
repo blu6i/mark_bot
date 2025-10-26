@@ -1,4 +1,6 @@
 from aiogram import Router
+
+from .help_msg import help_msg_router
 from .started_cmd import started_router
 from .teachers.start_mark import start_mark_router
 from .students.mark import mark_students_router
@@ -12,5 +14,5 @@ def register_router() -> Router:
     main_router.include_router(mark_students_router)
     main_router.include_router(print_excel_marks_router)
     main_router.include_router(generate_invite_link_router)
-
+    main_router.include_router(help_msg_router)
     return main_router
