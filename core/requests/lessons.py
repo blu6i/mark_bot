@@ -65,11 +65,8 @@ async def get_actual_lesson_teacher(user_tg_id: int) -> tuple[StatusRunMark, lis
     if not teacher_id:
         return StatusRunMark.IS_NO_TEACHER, None
 
-    # now_date = datetime.now().date()
-    # now_time = datetime.now().time()
-
-    now_date = date(2025, 10, 28)
-    now_time = time(14, 30)
+    now_date = datetime.now().date()
+    now_time = datetime.now().time()
 
     # Находим последнюю (по id) актуальную пару преподавателя
     sql_last_lesson = """
