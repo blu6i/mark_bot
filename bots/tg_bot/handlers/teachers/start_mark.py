@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command, StateFilter, or_f
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
@@ -11,6 +11,7 @@ from core.validators.validate_mark import validate_count_students
 
 from bots.tg_bot.handlers.keyboards import construct_keyboards
 from bots.tg_bot.config_bot import bot
+from bots.tg_bot.handlers.filters import CorrectWordCommand, IsTeacher, BlackListWord
 
 start_mark_router = Router()
 
@@ -26,7 +27,9 @@ class StartMarkState(StatesGroup):
     insert_count_student_state = State()
 
 
-@start_mark_router.message(Command("start_mark"))
+@start_mark_router.message(or_f(Command("start_mark"), F.text),
+                           CorrectWordCommand(['запустить отметку', '/start_mark']),
+                           IsTeacher())
 async def prestart_mark(message: Message, state: FSMContext):
     # TODO: в prestart сделать обработку ошибку при автоматической паре, чтобы
     #  возвращала клавиатуру и текст, чтобы препод сам создавать пару
@@ -156,7 +159,8 @@ async def delete_random_student(callback: CallbackQuery, state: FSMContext):
 
 @start_mark_router.message(F.text,
                            StateFilter(StartMarkState.delete_random_student_state,
-                                       StartMarkState.insert_count_student_state))
+                                       StartMarkState.insert_count_student_state),
+                           BlackListWord())
 async def insert_count_student(message: Message, state: FSMContext):
     await state.set_state(StartMarkState.insert_count_student_state)
     text = message.text

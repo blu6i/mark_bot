@@ -6,6 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 from bots.tg_bot.handlers.keyboards import construct_keyboards
 from bots.tg_bot.config_bot import bot
+from bots.tg_bot.handlers.filters import IsTeacher, CorrectWordCommand
 
 from core.enums import StatusLoadExcel
 from core.logic.teachers.print_excel_mark import get_date_marks, get_name_lessons_marks, get_student_marks, \
@@ -20,9 +21,10 @@ class PrintExcelMarks(StatesGroup):
     choice_groups = State()
 
 
-@print_excel_marks_router.message(or_f(Command("excel"), F.text))
+@print_excel_marks_router.message(or_f(Command("excel"), F.text),
+                                  CorrectWordCommand(['список отметившихся', '/excel']),
+                                  IsTeacher())
 async def choice_date_marks(message: Message, state: FSMContext):
-    print('aaa')
     await state.set_state(PrintExcelMarks.choice_date_marks)
     status, text, keyboards_data = await get_date_marks(message.from_user.id)
     if status == StatusLoadExcel.OK:
@@ -34,7 +36,8 @@ async def choice_date_marks(message: Message, state: FSMContext):
 
 
 @print_excel_marks_router.callback_query(F.data.startswith('date_'),
-                                         PrintExcelMarks.choice_date_marks)
+                                         PrintExcelMarks.choice_date_marks,
+                                         IsTeacher())
 async def choice_name_lessons(callback: CallbackQuery, state: FSMContext):
     await state.set_state(PrintExcelMarks.choice_name_lessons)
     date = callback.data.removeprefix('date_')
@@ -51,7 +54,8 @@ async def send_document_msg(chat_id: int, document: str):
     await bot.send_document(chat_id=chat_id, document=document)
 
 @print_excel_marks_router.callback_query(F.data.startswith('subject_'),
-                                         PrintExcelMarks.choice_name_lessons)
+                                         PrintExcelMarks.choice_name_lessons,
+                                         IsTeacher())
 async def print_excel_marks(callback: CallbackQuery, state: FSMContext):
     # TODO: вывести сколько людей отметилось на паре
     # TODO: сделать вывод inline кнопки с предложением вывести студентов
