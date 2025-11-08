@@ -57,3 +57,9 @@ class StatusInviteLink(Enum):
     OK = 1
     ALREADY_TG = 2
     NOT_FOUND = 3
+
+
+class StatusSettingsList(Enum):
+    OK = 1
+    NO_INFO = 4
+    INVALID_FULLNAME = 3

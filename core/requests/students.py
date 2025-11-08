@@ -131,6 +131,21 @@ async def delete_attendance_student(attendance_id: int):
     )
 
 
+async def delete_student(student_id: int):
+    """
+    Удаляет студента
+    :param student_id: id студента в базе данных
+    """
+    sql = """
+        DELETE FROM mark_bot.students
+        WHERE id = $1
+    """
+    await db_async.delete(
+        sql=sql,
+        params=[student_id]
+    )
+
+
 async def get_student_id_by_fullname(fullname: dict) -> int | None:
     """
     Полуает id студента по ФИО
@@ -149,6 +164,31 @@ async def get_student_id_by_fullname(fullname: dict) -> int | None:
         fetchone=True
     )
     return result[0] if result else None
+
+
+async def get_student_fullname(student_id: int) -> dict | None:
+    """
+    Полуает ФИО студента по его id
+    :param student_id: id студента в базе данных
+    :return: ФИО студента
+    """
+    sql = """
+        SELECT first_name, last_name, middle_name 
+        FROM mark_bot.students
+        WHERE id = $1
+    """
+    result = await db_async.select(
+        sql=sql,
+        params=[student_id],
+        fetchone=True
+    )
+    if not result:
+        return None
+    return {
+        'first_name': result[0],
+        'last_name': result[1],
+        'middle_name': result[2] if result[2] else None
+    }
 
 
 async def get_student_last_name(student_id: int) -> str | None:

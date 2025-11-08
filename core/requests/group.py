@@ -70,7 +70,7 @@ async def get_group_course(course: int) -> tuple[int]:
     :return: ид групп
     """
     sql = """
-        SELECT id 
+        SELECT id, name
         FROM mark_bot.groups 
         WHERE course = $1
     """
@@ -81,12 +81,62 @@ async def get_group_course(course: int) -> tuple[int]:
     )
     return result
 
+async def get_courses() -> list[int]:
+    """
+    Получаем курсы
+    :return: список курсов
+    """
+    sql = """
+    SELECT DISTINCT course
+    FROM mark_bot.groups
+    ORDER BY course
+    """
+    result = await db_async.select(
+        sql=sql,
+        fetchone=False
+    )
+    return [r['course'] for r in result] if result else []
+
+
+async def get_group_student(student_id):
+    sql = """
+        SELECT g.id, g.name
+        FROM mark_bot.groups g
+        JOIN mark_bot.group_students gs ON gs.group_id = g.id
+        JOIN mark_bot.students s ON s.id = gs.student_id
+        WHERE s.first_name = $1
+        AND s.last_name = $2
+        AND s.middle_name IS NOT DISTINCT FROM $3
+    """
+    result = await db_async.select(
+        sql=sql,
+        params=[student_id],
+        fetchone=True
+    )
+    return result
+
+
+async def get_group_students(group_id):
+    sql = """
+        SELECT id, last_name, first_name, middle_name
+        FROM mark_bot.students
+        WHERE group_id = $1
+    """
+    result = await db_async.select(
+        sql=sql,
+        params=[group_id],
+        fetchone=False
+    )
+    return result
+
+
 async def main():
-    r = await get_groups_id_by_instance_id(1)
-    for i in r:
-        id_, name =  i
-        print(f'{id_} {name}')
+    r = await get_group_course(2)
+    for i, name in r:
+        print(f'{i} {name}')
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
