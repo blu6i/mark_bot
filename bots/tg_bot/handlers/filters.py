@@ -36,7 +36,8 @@ class BlackListWord(BaseFilter):
         'отметиться',
         'запустить отметку',
         'список отметившихся',
-        'пригласить преподавателя'
+        'пригласить преподавателя',
+        'управление списками'
     ]
     async def __call__(self, msg: Message):
         return msg.text.lower() not in self.BLACK_LIST_WORD

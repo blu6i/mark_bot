@@ -58,7 +58,7 @@ async def get_name_lessons_marks(user_tg_id: int, date: str):
 
 def _sort_students_groups(students_attendance_list: list):
     result = {}
-    for group_name, last_name, first_name, middle_name in students_attendance_list:
+    for group_name, last_name, first_name, middle_name, status in students_attendance_list:
         fullname = f"{last_name} {first_name} {middle_name or ''}"
         if group_name not in result:
             result[group_name] = []
@@ -68,30 +68,39 @@ def _sort_students_groups(students_attendance_list: list):
 
 async def get_student_marks(instance_id: int):
     students_attendance_list = await get_student_attendance(instance_id)
-    sort_student_dict = _sort_students_groups(students_attendance_list)
-    return sort_student_dict
+    # sort_student_dict = _sort_students_groups(students_attendance_list)
+    return students_attendance_list
 
 
-async def load_msg_excel(instance_id: int, date: str, user_tg_id: int, groups_dict: dict, func):
+async def load_msg_excel(instance_id: int, date: str, user_tg_id: int, func):
     """
-    Создает Excel файл со списком студентов и отправляет его в чат пользователю
+    Создает Excel-файл со списком всех студентов по занятию.
+    В колонке 'Посещение' отмечает '+' у тех, кто был на паре.
 
     :param instance_id: ID отметки
     :param date: Дата проведения занятия
     :param user_tg_id: Telegram ID пользователя
-    :param groups_dict: Словарь с группами и списками студентов
+    :param func: Функция для отправки сообщения с документом
     """
     class_name = await get_subject_name_lesson(instance_id)
+    attendance_data = await get_student_marks(instance_id)
+
     filename = f"{class_name}_{date}.xlsx"
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Студенты"
-    ws.append(["ФИО студента", "Группа"])
-    for group, student_list in groups_dict.items():
-        for student in student_list:
-            ws.append([student, group])
+    ws.title = "Посещаемость"
+
+    ws.append(["ФИО студента", "Группа", "Посещение"])
+    for group_name, last_name, first_name, middle_name, status in attendance_data:
+        full_name = " ".join(filter(None, [last_name, first_name, middle_name]))
+        mark = "н" if not status else ""
+        ws.append([full_name, group_name, mark])
+
     ws.column_dimensions['A'].width = 60
     ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 15
+
     wb.save(filename)
     document = FSInputFile(filename)
     await func(chat_id=user_tg_id, document=document)

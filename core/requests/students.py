@@ -229,20 +229,26 @@ async def is_registered_student(student_id: int) -> bool:
     return result is not None
 
 
-async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, str]] | list:
+async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, str | None]] | list:
     """
-    Получает отметки студента по id занятия
+    Получает список студентов по id занятия с информацией о посещении.
+    Если студент не посещал — status будет None.
+
     :param instance_id: id занятия
-    :return: Список кортежей с информацией о студентах в формате
-             (название_группы, фамилия, имя, отчество)
-             Отсортировано по названию группы, фамилии, имени и отчеству студентов
+    :return: Список кортежей:
+             (название_группы, фамилия, имя, отчество, статус)
     """
     sql = """
-        SELECT g.name, s.last_name, s.first_name, s.middle_name
+        SELECT 
+            g.name AS group_name,
+            s.last_name,
+            s.first_name,
+            s.middle_name,
+            a.status
         FROM mark_bot.students s
-        JOIN mark_bot.attendance a ON a.student_id = s.id
         JOIN mark_bot.groups g ON g.id = s.group_id
-        WHERE a.lesson_instance_id = $1
+        LEFT JOIN mark_bot.attendance a 
+            ON a.student_id = s.id AND a.lesson_instance_id = $1
         ORDER BY g.name, s.last_name, s.first_name, s.middle_name
     """
     results = await db_async.select(
@@ -251,6 +257,18 @@ async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, 
         fetchone=False
     )
     return results if results else []
+
+
+
+async def get_all_student_instance(instance_id: int):
+    """
+    Возвращает всех студентов, которые должны быть на паре
+    :param instance_id: id занятия
+    :return:
+    """
+    sql = """
+        SELECT g.name, s
+    """
 
 
 async def insert_student_attendance(student_id: int, lesson_instance_id: int) -> StatusAttendanceMark:

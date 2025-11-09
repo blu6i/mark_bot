@@ -24,6 +24,7 @@ class SettingsList(StatesGroup):
     choice_student = State()
     confirm_delete = State()
     confirm_transfer = State()
+    input_fullname_new_student = State()
 
 
 @settings_list_router.message(or_f(F.text),
@@ -46,6 +47,26 @@ async def settings_list(callback: CallbackQuery, state: FSMContext):
     keyboards = construct_keyboards(keyboards_data)
     await callback.message.edit_text(text, reply_markup=keyboards)
     await state.set_state(SettingsList.choice_settings)
+
+
+@settings_list_router.callback_query(F.data.startswith('action_add'),
+                                     SettingsList.choice_settings)
+async def msg_fullname_student(callback: CallbackQuery, state: FSMContext):
+    status, text, keyboards_data = await sl.input_fullname_student()
+    keyboards = construct_keyboards(keyboards_data)
+    if status != StatusSettingsList.OK:
+        await callback.message.edit_text(text)
+        await state.clear()
+    else:
+        await callback.message.edit_text(text, reply_markup=keyboards)
+        await state.set_state(SettingsList.input_fullname_new_student)
+
+
+# @settings_list_router.message(F.text,
+#                               SettingsList.input_fullname_new_student,
+#                               filters.IsNotCommand(),
+#                               filters.BlackListWord())
+# async def input_fullname_student(message: Message, state: FSMContext):
 
 
 @settings_list_router.callback_query(or_f(F.data.startswith('action'), F.data.startswith('back_choice_course')),

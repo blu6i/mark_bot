@@ -42,10 +42,10 @@ async def get_keyboard_commands(user_tg_id: int) -> dict | None:
             "text": "Пригласить преподавателя",
             "callback_data": "create_invitation_link_teacher"
         })
-        keyboards["buttons"].append({
-            "text": "Управление списками",
-            "callback_data": "settings_list"
-        })
+        # keyboards["buttons"].append({
+        #     "text": "Управление списками",
+        #     "callback_data": "settings_list"
+        # })
         # keyboards["buttons"].append({
         #     "text": "Запустить парсинг расписания",
         #     "callback_data": "run_parsing_schedule"

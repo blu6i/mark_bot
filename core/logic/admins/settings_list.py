@@ -28,11 +28,11 @@ def get_settings_list_keyboard():
             {
                 'text': 'Удалить студента',
                 'callback_data': 'action_delete'
-            },
-            {
-                'text': 'Перевести студента',
-                'callback_data': 'action_transfer'
             }
+            # {
+            #     'text': 'Перевести студента',
+            #     'callback_data': 'action_transfer'
+            # }
         ]
     }
     text = 'Выберите операцию:'
@@ -162,3 +162,19 @@ async def delete_student(student_id: int) -> tuple[StatusSettingsList, str]:
     fullname_str = f'{fullname_dict.get("last_name")} {fullname_dict.get("first_name")} {fullname_dict.get("middle_name") or ""}'
     text = f'Студент {fullname_str} удален'
     return StatusSettingsList.OK, text
+
+
+async def input_fullname_student() -> tuple[StatusSettingsList, str, dict | None]:
+    text = (f"Введите ФИО студента в формате:\n"
+            f"Фамилия Имя Отчество\n"
+            f"Например: Иванов Иван Иванович")
+    keyboards = {
+        'type': 'inline',
+        'buttons': [
+            {
+                'text': 'Назад',
+                'callback_data': 'back_settings_list'
+            }
+        ]
+    }
+    return StatusSettingsList.OK, text, keyboards

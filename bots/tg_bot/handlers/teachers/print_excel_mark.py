@@ -62,7 +62,6 @@ async def print_excel_marks(callback: CallbackQuery, state: FSMContext):
     #  прямо в телеграм
     data = await state.get_data()
     date = data.get("date")
-    subject_id = callback.data.removeprefix('subject_')
-    marks_data = await get_student_marks(int(subject_id))
+    instance_id = callback.data.removeprefix('subject_')
     user_tg_id = callback.from_user.id
-    await load_msg_excel(int(subject_id), date, user_tg_id, marks_data, send_document_msg)
+    await load_msg_excel(int(instance_id), date, user_tg_id, send_document_msg)
