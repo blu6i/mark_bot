@@ -273,36 +273,38 @@ async def get_all_student_instance(instance_id: int):
 
 async def insert_student_attendance(student_id: int, lesson_instance_id: int) -> StatusAttendanceMark:
     """
-    Добавляет отметку студента
-    :param lesson_instance_id: id занятия
-    :param student_id: id студента
-    :return: id отметки
+        Добавляет отметку студента
+        :param lesson_instance_id: id занятия
+        :param student_id: id студента
+        :return: id отметки
     """
-    sql = """
+    sql_check = """
+        SELECT id FROM mark_bot.attendance
+        WHERE student_id = $1 AND lesson_instance_id = $2
+    """
+    existing = await db_async.select(
+        sql=sql_check,
+        params=[student_id, lesson_instance_id],
+        fetchone=True
+    )
+    if existing:
+        return StatusAttendanceMark.ALREADY
+
+    sql_insert = """
         INSERT INTO mark_bot.attendance (student_id, lesson_instance_id)
         VALUES ($1, $2)
-        ON CONFLICT (student_id, lesson_instance_id) DO NOTHING
         RETURNING id;
     """
     result = await db_async.insert(
-        sql=sql,
+        sql=sql_insert,
         params=[student_id, lesson_instance_id],
         returning=True
     )
     if result:
         return StatusAttendanceMark.OK
-    sql = """
-        SELECT id FROM mark_bot.attendance
-        WHERE student_id = $1 AND lesson_instance_id = $2
-    """
-    result = await db_async.select(
-        sql=sql,
-        params=[student_id, lesson_instance_id],
-        fetchone=True
-    )
-    if result:
-        return StatusAttendanceMark.ALREADY
+
     return StatusAttendanceMark.ERROR
+
 
 
 async def is_instance_group_student(instance_id: int, student_id: int) -> bool:
