@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, date, time
 
 from core.database_config import db_async
@@ -25,6 +26,43 @@ async def get_date_instances(user_tg_id: int) -> tuple[str] | None:
         fetchone=False
     )
     return results
+
+
+async def get_status_clear_instance(instance_id: int):
+    """
+    Возвращает статус очистки студентов
+    :param instance_id: ИД отметки
+    :return: флаг очистки
+    """
+    sql = """
+        SELECT is_clear
+        FROM mark_bot.lesson_instances
+        WHERE id = $1
+    """
+    results = await db_async.select(
+        sql=sql,
+        params=[instance_id],
+        fetchone=True
+    )
+    return results[0] if results else None
+
+
+async def update_clear_lesson_instance(instance_id: int, flag: bool = True):
+    """
+    Обновляет статус очистки у отметки
+    :param instance_id: Ид отметки
+    :param flag: флаг
+    :return:
+    """
+    sql = """
+        UPDATE mark_bot.lesson_instances
+        SET is_clear = $1
+        WHERE id = $2
+    """
+    await db_async.update(
+        sql=sql,
+        params=[flag, instance_id]
+    )
 
 
 async def get_subject_schedule_for_teacher(user_tg_id: int, date: str) -> tuple[StatusLoadExcel, list[tuple[int, str, str]] | None]:
@@ -329,3 +367,10 @@ async def get_subject_name_lesson(lesson_instance_id: int) -> str:
         fetchone=True
     )
     return result[0] if result else None
+
+
+async def main():
+    print(await get_status_clear_instance(1))
+
+if __name__ == "__main__":
+    asyncio.run(main())

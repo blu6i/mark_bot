@@ -3,9 +3,12 @@ import os
 from aiogram.types import FSInputFile
 from openpyxl import Workbook
 
-from core.requests.lessons import get_date_instances, get_subject_schedule_for_teacher, get_subject_name_lesson
-from core.enums import StatusLoadExcel
-from core.requests.students import get_student_attendance
+from core.requests.lessons import get_date_instances, get_subject_schedule_for_teacher, get_subject_name_lesson, \
+    update_clear_lesson_instance, get_status_clear_instance
+from core.enums import StatusLoadExcel, StatusValidCountStudent
+from core.requests.students import get_student_attendance, get_count_students_instance, get_random_student_instance, \
+    delete_instance_student, get_count_student_id_instance
+
 
 def _str_to_russian_date(date: str):
     return date[8:10] + '.' + date[5:7] + '.' + date[0:4]
@@ -49,6 +52,10 @@ async def get_name_lessons_marks(user_tg_id: int, date: str):
             "text": f"{lesson_type_short} | {subject_name_short}",
             "callback_data": f"subject_{id_}"
         })
+    buttons_data.append({
+        "text": "Назад",
+        "callback_data": "back"
+    })
     keyboards_data = {
         "type": "inline",
         "buttons": buttons_data
@@ -71,6 +78,128 @@ async def get_student_marks(instance_id: int):
     # sort_student_dict = _sort_students_groups(students_attendance_list)
     return students_attendance_list
 
+
+def get_keyboard_option():
+    text = "Выберите действие:"
+    keyboards_data = {
+        'type': 'inline',
+        'buttons': [
+            {
+                "text": f"Удалить случайно",
+                "callback_data": f"remove_random_student"
+            },
+            {
+                'text': 'Получить таблицу',
+                'callback_data': 'get_student_list'
+            },
+            {
+                'text': 'Назад',
+                'callback_data': 'back'
+            }
+        ]
+    }
+    return text, keyboards_data
+
+
+# ===[Рандомное удаление]===
+async def get_info_delete_student(instance_id: int):
+    count_student = await get_count_student_id_instance(instance_id)
+    text = (f'Отмечено студентов: {count_student}\n'
+            f'Укажите количество студентов на паре:')
+    keyboards_data = {
+        "type": "inline",
+        "buttons": [{
+            'text': 'Назад',
+            'callback_data': 'back'
+        }]
+    }
+    return text, keyboards_data
+
+async def start_delete_random_student(instance_id: int):
+    status_clear = await get_status_clear_instance(instance_id)
+    if status_clear:
+        text = ('Внимание! Вы уже выбирали случайное удаление.\n'
+                'Подтвердите свое действие или вернитесь назад.')
+        keyboards_data = {
+            'type': 'inline',
+            'buttons': [{
+                'text': 'Подтвердить',
+                'callback_data': 'confirm_rerun_delete'
+            },
+                {
+                    'text': 'Назад',
+                    'callback_data': 'back'
+                }
+            ]
+        }
+        return text, keyboards_data, StatusLoadExcel.HAVE_DELETE
+    else:
+        text, keyboards_data = await get_info_delete_student(instance_id)
+        return text, keyboards_data, StatusLoadExcel.OK
+
+
+async def validate_count_students(count_student: int, instance_id: int) -> tuple[StatusValidCountStudent, int | None, str | None, dict | None]:
+    count_student_instance = await get_count_student_id_instance(instance_id)
+    extra_marks = count_student_instance - count_student
+    if extra_marks == 0:
+        # Кол-во отметившихся = кол-во присутствующих
+        text = (f'Количество отмеченных студентов: {count_student_instance}\n'
+                '\n'
+                f'Вы ввели: {count_student}\n'
+                'Введенное количество студентов совпадает с отмеченными.\n'
+                'Введите другое число')
+        return StatusValidCountStudent.EQUALLY, None, text, None
+    elif extra_marks < 0:
+        # Кол-во отметившихся < кол-во присутствующих. Сказать о проблеме с отметкой
+        text = (f'Количество отмеченных студентов: {count_student_instance}\n'
+                '\n'
+                f'Вы ввели: {count_student}\n'
+                '\n'
+                'Введенное количество студентов превышает отмеченных.\n'
+                'Введите другое количество студентов')
+        keyboards = {
+            "type": "inline",
+            "buttons": [{
+                "text": "Назад",
+                "callback_data": "back",
+            }]
+        }
+        return StatusValidCountStudent.OVER, None, text, keyboards
+    else:
+        # При случайно удалении останутся отметки
+        text = (f'Количество отмеченных студентов: {count_student_instance}\n'
+                '\n'
+                f'Вы ввели: {count_student}\n'
+                f'\n'
+                f'Подтвердите ввод или введите другое количество студентов')
+        buttons_data = [
+            {
+                "callback_data": "confirm_delete",
+                "text": 'Удалить',
+            },
+            {
+                "text": "Назад",
+                "callback_data": "back",
+            }
+        ]
+        keyboards = {
+            "type": "inline",
+            "buttons": buttons_data
+        }
+        return StatusValidCountStudent.OK, extra_marks, text, keyboards
+
+
+async def delete_random_instance_student(instance_id: int, extra_marks: int):
+    list_student_for_delete = await get_random_student_instance(instance_id, extra_marks)
+    await update_clear_lesson_instance(instance_id)
+    list_name = []
+    for id_, l_name in list_student_for_delete:
+        await delete_instance_student(instance_id, id_)
+        list_name.append(l_name)
+    list_name.sort()
+    text = (f'Удалены студенты:\n'
+            f'{', '.join(list_name)}')
+    return text
 
 async def load_msg_excel(instance_id: int, date: str, user_tg_id: int, func):
     """

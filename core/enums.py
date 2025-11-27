@@ -46,6 +46,8 @@ class StatusLoadExcel(Enum):
     NO_DATA = 2
     ERROR = 3
 
+    HAVE_DELETE = 4
+
 
 class StatusValidCountStudent(Enum):
     OK = 1

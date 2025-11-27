@@ -1,3 +1,5 @@
+import asyncio
+
 from core.database_config import db_async
 from core.enums import StatusAttendanceMark
 
@@ -131,6 +133,17 @@ async def delete_attendance_student(attendance_id: int):
     )
 
 
+async def delete_instance_student(instance_id: int, student_id: int):
+    sql = """
+        DELETE FROM mark_bot.attendance
+        WHERE lesson_instance_id = $1 AND student_id = $2
+    """
+    await db_async.delete(
+        sql=sql,
+        params=[instance_id, student_id]
+    )
+
+
 async def delete_student(student_id: int):
     """
     Удаляет студента
@@ -260,15 +273,45 @@ async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, 
 
 
 
-async def get_all_student_instance(instance_id: int):
+async def get_count_student_id_instance(instance_id: int):
     """
     Возвращает всех студентов, которые должны быть на паре
     :param instance_id: id занятия
     :return:
     """
     sql = """
-        SELECT g.name, s
+        SELECT COUNT(student_id) FROM mark_bot.attendance
+        WHERE lesson_instance_id=$1
     """
+    results = await db_async.select(
+        sql=sql,
+        params=[instance_id],
+        fetchone=True
+    )
+    return results[0] if results else None
+
+
+async def get_random_student_instance(instance_id: int, extra_marks: int):
+    """
+    Выборка случайных Н записей в таблице с отметками
+    :param instance_id: ИД отметки
+    :param extra_marks: кол-во записей для выборки
+    :return:
+    """
+    sql = """
+        SELECT s.id, s.last_name
+        FROM mark_bot.attendance a
+        JOIN mark_bot.students s ON s.id = a.student_id
+        WHERE a.lesson_instance_id = $1
+        ORDER BY RANDOM()
+        LIMIT $2;
+    """
+    results = await db_async.select(
+        sql=sql,
+        params=[instance_id, extra_marks],
+        fetchone=False
+    )
+    return results if results else []
 
 
 async def insert_student_attendance(student_id: int, lesson_instance_id: int) -> StatusAttendanceMark:
@@ -327,3 +370,9 @@ async def is_instance_group_student(instance_id: int, student_id: int) -> bool:
         fetchone=True
     )
     return result is not None
+
+async def main():
+    print(await get_random_student_instance(1, 3))
+
+if __name__ == "__main__":
+    asyncio.run(main())

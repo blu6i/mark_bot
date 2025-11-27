@@ -17,7 +17,7 @@ async def get_keyboard_commands(user_tg_id: int) -> dict | None:
                     "callback_data": "start_mark"
                 },
                 {
-                    "text": "Список отметившихся",
+                    "text": "Мои отметки",
                     "callback_data": "show_marks"
                 }
             ]
