@@ -258,11 +258,14 @@ async def get_student_attendance(instance_id: int) -> list[tuple[str, str, str, 
             s.first_name,
             s.middle_name,
             a.status
-        FROM mark_bot.students s
-        JOIN mark_bot.groups g ON g.id = s.group_id
+        FROM mark_bot.lesson_instance_groups lig
+        JOIN mark_bot.groups g ON g.id = lig.group_id
+        JOIN mark_bot.students s ON s.group_id = g.id
         LEFT JOIN mark_bot.attendance a 
-            ON a.student_id = s.id AND a.lesson_instance_id = $1
-        ORDER BY g.name, s.last_name, s.first_name, s.middle_name
+            ON a.student_id = s.id 
+            AND a.lesson_instance_id = $1
+        WHERE lig.lesson_instance_id = $1
+        ORDER BY g.name, s.last_name, s.first_name, s.middle_name;
     """
     results = await db_async.select(
         sql=sql,

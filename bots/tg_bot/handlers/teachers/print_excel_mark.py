@@ -9,7 +9,7 @@ from bots.tg_bot.config_bot import bot
 from bots.tg_bot.handlers.filters import IsTeacher, CorrectWordCommand
 
 from core.enums import StatusLoadExcel, StatusValidCountStudent
-from core.logic.teachers.print_excel_mark import get_date_marks, get_name_lessons_marks, get_student_marks, \
+from core.logic.teachers.print_excel_mark import get_date_marks, get_name_lessons_marks, \
     load_msg_excel, get_keyboard_option, validate_count_students, delete_random_instance_student, \
     start_delete_random_student, get_info_delete_student
 

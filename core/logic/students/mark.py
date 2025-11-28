@@ -5,6 +5,7 @@ from core.enums import StatusMarkStudent, StatusAttendanceMark
 from core.redis_config import redis_instance, redis_attendance
 
 from core.requests import students, lessons, group
+from core.requests.lessons import update_clear_lesson_instance
 
 
 def add_attendance_redis(chat_id: int, lesson_data: list[int]):
@@ -91,4 +92,6 @@ async def delete_random_students(count_random: int, chat_id: int) -> str:
     result.sort()
     text = (f'Удалены студенты:\n'
             f'{', '.join(result)}')
+    for lesson_instances_id in lesson_instances_ids:
+        await update_clear_lesson_instance(lesson_instances_id)
     return text
